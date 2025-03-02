@@ -173,6 +173,11 @@ function M.convert_between_single_and_multiline_bash_command()
     local indent = string.rep(' ', vim.fn.indent(lnum))
     local extra_indent = string.rep(" ", config.bash_command_argument_indent)
 
+    if vim.o.ft == '' then
+        -- Parse entire file as bash for '[No Name]' buffers
+        vim.o.ft = 'bash'
+    end
+
     local node = find_parent('command')
     if node == nil then
         return
