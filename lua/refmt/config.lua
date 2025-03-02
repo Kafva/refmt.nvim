@@ -16,26 +16,17 @@ function M.setup(user_opts)
 
     -- stylua: ignore start
     if opts and opts.default_bindings then
-        vim.keymap.set("n", "tf", require('refmt').bash_fold_toggle,
-                      {desc = "Fold/unfold bash command under cursor"})
+        vim.keymap.set("n", "tf", require('refmt').convert_between_single_and_multiline_bash_command,
+                      {desc = "Convert between a singleline and multiline bash command"})
 
-        vim.keymap.set("n", "ta", require('refmt').bash_argify,
-                      {desc = "Create an argument array bash command under cursor"})
+        vim.keymap.set("n", "ta", require('refmt').convert_between_exec_array_and_bash_command,
+                      {desc = "Convert between an exec(...) array and a bash command"})
 
-        vim.keymap.set("v", "tu", function ()
-            -- HACK: The visual selection marks "'<,'>" that we use to determine the
-            -- currently selected text are not set until after we simulate opening the
-            -- command prompt
-            vim.fn.feedkeys(':')
-            vim.fn.feedkeys("BashUnargify")
-            vim.cmd[[call feedkeys("\<CR>")]]
-        end, {desc = "Revert command list under cursor to a bash command"})
-
-        vim.keymap.set("n", "tc", require('refmt').convert_comment,
+        vim.keymap.set("n", "tc", require('refmt').convert_comment_slash_to_asterisk,
                        {desc = "Convert '// ... ' comments into '/** ... */'"})
 
-        vim.keymap.set("n", "tl", require('refmt').convert_arglist,
-                       {desc = "Split argument list onto seperate lines"})
+        vim.keymap.set("n", "tl", require('refmt').convert_between_single_and_multiline_argument_lists,
+                       {desc = "Toggle between a single line argument list and a multiline argument list"})
     end
     -- stylua: ignore end
 end

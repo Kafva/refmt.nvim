@@ -1,2 +1,2 @@
 ---@class RefmtOptions
----@field default_bindings boolean
+---@field default_bindings? boolean

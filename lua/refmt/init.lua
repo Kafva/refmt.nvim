@@ -2,160 +2,117 @@ local M = {}
 
 local config = require 'refmt.config'
 
----@param single_line_content boolean
----@param node TSNode|nil
----@return table|nil, integer, integer
-local function bash_words(node, single_line_content)
-    local parent, start_row, end_row, lines, start_col, end_col, words
+---- Apply a formatting function that expects a shell script input.
+-----@param formatfn function
+--local function bash_reformat(formatfn)
+--    local node, single_line_content
 
-    -- Unless a node was passed, find the first parent 'command' node for the
-    -- word under the cursor
-    if node == nil then
-        node = vim.treesitter.get_node()
-    end
-    if node == nil then
-        vim.notify("No command under cursor")
-        return nil, -1, -1
-    end
-    parent = node
+--    if vim.o.ft == '' then
+--        -- Parse entire file as bash for '[No Name]' buffers
+--        vim.o.ft = 'bash'
+--    end
 
-    while parent:type() ~= 'command' do
-        parent = parent:parent()
-        if parent == nil then
-            vim.notify("No command under cursor")
-            return nil, -1, -1
+--    if vim.o.ft ~= 'bash' and vim.o.ft ~= 'sh' then
+--        -- Parse current line only
+--        single_line_content = vim.api.nvim_get_current_line()
+
+--        local parser = vim.treesitter.get_string_parser(single_line_content,
+--                                                        "bash", nil)
+--        local tree = parser:parse({0, 1})[1]
+
+--        -- The root node is a "program", we want to pass the first "command"
+--        ---@diagnostic disable-next-line: missing-parameter
+--        node = tree:root():child()
+--    end
+--    formatfn(node, single_line_content)
+--end
+
+-- function M.bash_argify()
+--     bash_reformat(bash_fold_toggle_fn)
+-- end
+
+---@param lines string[]?
+local function exec2bash(lines)
+    if #lines == 0 then
+        return
+    end
+
+    local lnum = vim.fn.line('.')
+    local out = ""
+
+    -- Remove everything before/after the array markers in the first line
+    lines[1]        = lines[1]:gsub("^[^%(%[%{]*[%(%[%{]", '')
+    lines[#lines]   = lines[#lines]:gsub("[%)%}%]][^%)%]%}]*$", '')
+
+    for _,line in pairs(lines) do
+        local words = vim.split(line, ',')
+        for _,word in pairs(words) do
+            -- Remove quotes around each argument
+            out = out .. " " .. vim.trim(word):gsub("^['\"]", '')
+                                              :gsub("['\"]$", '')
         end
     end
 
-    -- Parse out each word
-    words = {}
-    for child in parent:iter_children() do
-        start_row, start_col, _, end_row, end_col, _ = child:range(true)
-        if single_line_content ~= nil then
-            lines = { single_line_content }
-        else
-            lines = vim.api.nvim_buf_get_lines(0, start_row, end_row + 1, false)
-        end
-        if #lines == 0 then
-            break
-        end
-        local word = vim.trim(lines[1]:sub(start_col, end_col))
-        table.insert(words, word)
-    end
-
-    start_row, start_col, _, end_row, end_col, _ = parent:range(true)
-
-    return words, start_row, end_row
+    local start_row = lnum - 1
+    local end_row = start_row + #lines
+    -- Remove duplicate spacing
+    local indent = string.rep(' ', vim.fn.indent(lnum))
+    out =  indent ..  out:gsub('%s+', ' ')
+    vim.api.nvim_buf_set_lines(0, start_row, end_row, true, {out})
 end
 
 -- Create an argument array from a bash command line
----@param single_line_content boolean
----@param node TSNode|nil
-local function bash_argify_fn(node, single_line_content)
-    local lnum = vim.fn.line('.')
-    local words, _, _ = bash_words(node, single_line_content)
+---@param lines string[]?
+local function bash2exec(lines)
+    local open_bracket, close_bracket
+    local curly_bracket_langs = {
+        'c',
+        'cpp',
+        'zig',
+        'lua',
+    }
+    if vim.tbl_contains(curly_bracket_langs, vim.o.ft) then
+        open_bracket = '{'
+        close_bracket = '}'
+    else
+        open_bracket = '['
+        close_bracket = ']'
+    end
 
-    if words == nil then
+    local lnum = vim.fn.line('.')
+    local children, _, _ = get_child_nodes('command', lines)
+
+    if children == nil then
         return
     end
 
     -- Qoute every word
-    for i,word in ipairs(words) do
+    for i,word in ipairs(children) do
         if not vim.startswith(word, '"') then
-            words[i] = '"' .. word .. '"'
+            children[i] = '"' .. word .. '"'
         end
     end
 
     local indent = string.rep(' ', vim.fn.indent(lnum))
-    local content = indent .. "{" .. vim.fn.join(words, ', ') .. "}"
+    local new_lines = indent .. open_bracket .. vim.fn.join(children, ', ') .. close_bracket
 
-    vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, {content})
+    vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, {new_lines})
 end
 
----@param single_line_content boolean
----@param node TSNode|nil
----@return table|nil
-local function bash_fold_toggle_fn(node, single_line_content)
-    local lnum = vim.fn.line('.')
-    local indent = string.rep(' ', vim.fn.indent(lnum))
-    local extra_indent = string.rep(" ", 4)
-    local words, start_row, end_row = bash_words(node, single_line_content)
-
-    if words == nil then
-        return
-    end
-
-    if start_row == end_row then
-        -- If the command spans a single line, unfold it with each argument on
-        -- a seperate line
-        local arr = {}
-
-        for _,word in ipairs(words) do
-            -- A flag is expected to start with '-' or '+'
-            local isflag = word:match("^[-+]") ~= nil
-            local prev_isflag = #arr > 0 and arr[#arr]:match("^[-+]") ~= nil
-            local prev_has_arg = #arr > 0  and arr[#arr]:match(" ") ~= nil
-
-            if not isflag and prev_isflag and not prev_has_arg then
-                -- Previous word was a flag and current word is not, add as an argument
-                -- unless an argument has already been provided
-                arr[#arr] = arr[#arr] .. " " .. word
-            else
-                -- Otherwise, finish up the previous row and add the current
-                -- word on a new row
-                if #arr == 1 then
-                    arr[#arr] = indent .. arr[#arr] .. " \\"
-                elseif #arr > 1 then
-                    arr[#arr] = indent .. extra_indent .. arr[#arr] .. " \\"
-                end
-                table.insert(arr, vim.trim(word))
-            end
-        end
-
-        -- Indent last row
-        arr[#arr] = indent .. extra_indent .. arr[#arr]
-
-        vim.notify("Unfolding line " .. lnum)
-        vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, arr)
+-- Convert between an exec(...) array and a bash command
+function M.convert_between_exec_array_and_bash_command()
+    if true then
+        exec2bash()
     else
-        -- If the command spans more than one row, re-format it to one line
-        if #words <= 2 then
-            vim.notify("Nothing to fold")
-            return
-        end
-
-        vim.notify("Folding line " .. lnum)
-        local replacement = { indent .. vim.fn.join(words, " ") }
-        vim.api.nvim_buf_set_lines(0, start_row, end_row + 1, false, replacement)
+        bash2exec()
     end
 end
 
----@param formatfn function
-local function bash_reformat(formatfn)
-    local node, single_line_content
-
-    if vim.o.ft == '' then
-        -- Parse entire file as bash for '[No Name]' buffers
-        vim.o.ft = 'bash'
-    end
-
-    if vim.o.ft ~= 'bash' and vim.o.ft ~= 'sh' then
-        -- Parse current line only
-        single_line_content = vim.api.nvim_get_current_line()
-
-        local parser = vim.treesitter.get_string_parser(single_line_content,
-                                                        "bash", nil)
-        local tree = parser:parse({0, 1})[1]
-
-        -- The root node is a "program", we want to pass the first "command"
-        ---@diagnostic disable-next-line: missing-parameter
-        node = tree:root():child()
-    end
-    formatfn(node, single_line_content)
+function M.convert_between_single_and_multiline_bash_command()
 end
 
 -- Toggle between a single line argument list and a multiline argument list
-function M.convert_arglist()
+function M.convert_between_single_and_multiline_argument_lists()
     local parent_names = {
         -- Function declarations
         'parameter_list',           -- C
@@ -251,7 +208,7 @@ function M.convert_arglist()
 end
 
 -- Refactor '// ... ' comments into '/** ... */'
-function M.convert_comment()
+function M.convert_comment_slash_to_asterisk()
     local window = vim.api.nvim_get_current_win()
     local start_pos = vim.api.nvim_win_get_cursor(window)
     local first = true
@@ -306,44 +263,6 @@ function M.convert_comment()
     end
 
     vim.api.nvim_buf_set_lines(0, start_pos[1] - 1, end_line, true, arr)
-end
-
----@param content string[]
-function M.bash_unargify(content)
-    if #content == 0 then
-        return
-    end
-
-    local lnum = vim.fn.line('.')
-    local out = ""
-
-    -- Remove everything before/after the array markers in the first line
-    content[1]        = content[1]:gsub("^[^%(%[%{]*[%(%[%{]", '')
-    content[#content]   = content[#content]:gsub("[%)%}%]][^%)%]%}]*$", '')
-
-    for _,line in pairs(content) do
-        local words = vim.split(line, ',')
-        for _,word in pairs(words) do
-            -- Remove quotes around each argument
-            out = out .. " " .. vim.trim(word):gsub("^['\"]", '')
-                                              :gsub("['\"]$", '')
-        end
-    end
-
-    local start_row = lnum - 1
-    local end_row = start_row + #content
-    -- Remove duplicate spacing
-    local indent = string.rep(' ', vim.fn.indent(lnum))
-    out =  indent ..  out:gsub('%s+', ' ')
-    vim.api.nvim_buf_set_lines(0, start_row, end_row, true, {out})
-end
-
-function M.bash_fold_toggle()
-    bash_reformat(bash_fold_toggle_fn)
-end
-
-function M.bash_argify()
-    bash_reformat(bash_argify_fn)
 end
 
 ---@param user_opts RefmtOptions?
