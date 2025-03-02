@@ -11,10 +11,10 @@ local function find_parent(node_type, root_node)
         node = root_node
     else
         node = vim.treesitter.get_node()
-    end
-    if node == nil then
-        vim.notify(string.format("No %s under cursor", node_type))
-        return nil
+        if node == nil then
+            vim.notify(string.format("No %s under cursor", node_type))
+            return nil
+        end
     end
     parent = node
 
@@ -56,20 +56,26 @@ local function get_child_nodes(node)
     return children, children_start_row, children_end_row
 end
 
----@param root_node? TSNode
----@return TSNode[], number, number
-local function find_command_child_nodes(root_node)
-    local node = find_parent('command', root_node)
-    if node == nil then
-        return {}
+-- Return a list of all direct children of `node`.
+-- The node should be from the `line` string.
+---@param node TSNode
+---@param line string
+---@return TSNode[]
+local function get_child_nodes_from_line(node, line)
+    local children = {}
+
+    for child in node:iter_children() do
+        local _, start_col, _, _, end_col, _ = child:range(true)
+        local child = vim.trim(line:sub(start_col, end_col))
+        table.insert(children, child)
     end
 
-    return get_child_nodes(node)
+    return children
 end
+
 
 -- Convert from a bash command to an exec(...) array
 function M.convert_to_exec_array()
-    local node = nil
     local open_bracket, close_bracket
     local curly_bracket_langs = {
         'c',
@@ -91,7 +97,14 @@ function M.convert_to_exec_array()
         vim.o.ft = 'bash'
     end
 
+    local children
     if vim.tbl_contains({'zsh', 'bash', 'sh'}, vim.o.ft) then
+        local node = find_parent('command')
+        if node == nil then
+            return
+        end
+        children, _, _ = get_child_nodes(node)
+    else
         -- Only parse the current line when the filetype is not shell
         local line = vim.api.nvim_get_current_line()
         local parser = vim.treesitter.get_string_parser(line, "bash", nil)
@@ -99,10 +112,13 @@ function M.convert_to_exec_array()
 
         -- The root node is a "program", we want to pass the first "command"
         ---@diagnostic disable-next-line: missing-parameter
-        node = tree:root():child()
+        local node = tree:root():child()
+        if node == nil then
+            return
+        end
+        children = get_child_nodes_from_line(node, line)
     end
 
-    local children = find_command_child_nodes(node)
     if #children == 0 then
         return
     end
@@ -128,9 +144,15 @@ function M.convert_to_bash_command()
     local lnum = vim.fn.line('.')
     local out = ""
 
+    if #line < 3 then
+        return
+    end
+
     -- Remove everything before/after the array markers in the first line
     line = line:gsub("^[^%(%[%{]*[%(%[%{]", '')
                :gsub("[%)%}%]][^%)%]%}]*$", '')
+    -- ... including the array markers themselves
+    line = line:sub(2, #line - 1)
 
     local words = vim.split(line, ',')
     for _,word in pairs(words) do
@@ -143,7 +165,7 @@ function M.convert_to_bash_command()
     local end_row = start_row + 1
     -- Remove duplicate spacing
     local indent = string.rep(' ', vim.fn.indent(lnum))
-    out =  indent ..  out:gsub('%s+', ' ')
+    out = indent ..  out:gsub('%s+', ' ')
     vim.api.nvim_buf_set_lines(0, start_row, end_row, true, {out})
 end
 
@@ -151,7 +173,13 @@ function M.convert_between_single_and_multiline_bash_command()
     local lnum = vim.fn.line('.')
     local indent = string.rep(' ', vim.fn.indent(lnum))
     local extra_indent = string.rep(" ", config.bash_command_argument_indent)
-    local children, start_row, end_row = find_command_child_nodes()
+
+    local node = find_parent('command')
+    if node == nil then
+        return
+    end
+
+    local children, start_row, end_row = get_child_nodes(node)
 
     if #children == 0 then
         return

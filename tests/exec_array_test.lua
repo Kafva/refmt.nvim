@@ -21,8 +21,24 @@ table.insert(M.testcases, {
     fn = function()
         vim.cmd [[edit tests/files/exec_array_input.sh]]
 
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
+        require('refmt').convert_to_exec_array()
+
         tsst.assert_eql_file("tests/files/exec_array_output.sh", lines)
     end,
 })
+
+table.insert(M.testcases, {
+    desc = 'Convert from an exec(...) array to bash command in a shell script',
+    fn = function()
+        vim.cmd [[edit tests/files/exec_array_input.sh]]
+
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
+        require('refmt').convert_to_exec_array()
+
+        tsst.assert_eql_file("tests/files/exec_array_output.sh", lines)
+    end,
+})
+
 
 return M
