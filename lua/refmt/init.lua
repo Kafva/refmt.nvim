@@ -73,7 +73,6 @@ local function get_child_nodes_from_line(node, line)
     return children
 end
 
-
 -- Convert from a bash command to an exec(...) array
 function M.convert_to_exec_array()
     local open_bracket, close_bracket
