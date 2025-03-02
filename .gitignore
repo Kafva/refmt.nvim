@@ -1,4 +1,8 @@
 .testenv
+debugger.lua
+tests/parser
+tests/tsst.nvim
+
 
 **/bin/**
 **/obj/**

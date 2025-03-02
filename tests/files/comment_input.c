@@ -1,8 +1,8 @@
 #include <stdio.h>
 
-/// In C, `main()` is the special function where the execution of a program begins.   
-/// It's the entry point – the operating system calls `main()` to start running y  
-/// our code.  Think of it as the main doorway into your program's logic.  
+/// In C, `main()` is the special function where the execution of a program begins.
+/// It's the entry point – the operating system calls `main()` to start running y
+/// our code.  Think of it as the main doorway into your program's logic.
 int main(int argc, char *argv[], char *envp[]) {
 
     for (int i = 0; i < 10; i++) {
@@ -23,7 +23,6 @@ int main(int argc, char *argv[], char *envp[]) {
 
     fflush(NULL);
 
+    // Single line comment
     return 0;
 }
-
-
