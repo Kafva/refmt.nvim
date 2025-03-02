@@ -3,6 +3,9 @@ local M = {}
 ---@type RefmtOptions
 M.default_opts = {
     default_bindings = true,
+    -- How much to indent arguments to a bash command when expanded into a
+    -- multiline call.
+    bash_command_argument_indent = 4,
 }
 
 ---@param user_opts RefmtOptions?
@@ -19,8 +22,11 @@ function M.setup(user_opts)
         vim.keymap.set("n", "tf", require('refmt').convert_between_single_and_multiline_bash_command,
                       {desc = "Convert between a singleline and multiline bash command"})
 
-        vim.keymap.set("n", "ta", require('refmt').convert_between_exec_array_and_bash_command,
-                      {desc = "Convert between an exec(...) array and a bash command"})
+        vim.keymap.set("n", "ta", require('refmt').convert_to_exec_array,
+                      {desc = "Convert from a bash command to an exec(...) array"})
+
+        vim.keymap.set("n", "tu", require('refmt').convert_to_bash_command,
+                      {desc = "Convert from an exec(...) array into a bash command"})
 
         vim.keymap.set("n", "tc", require('refmt').convert_comment_slash_to_asterisk,
                        {desc = "Convert '// ... ' comments into '/** ... */'"})

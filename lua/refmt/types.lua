@@ -1,2 +1,3 @@
 ---@class RefmtOptions
 ---@field default_bindings? boolean
+---@field bash_command_argument_indent number

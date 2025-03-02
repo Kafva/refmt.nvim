@@ -2,68 +2,74 @@ local M = {}
 
 local config = require 'refmt.config'
 
----- Apply a formatting function that expects a shell script input.
------@param formatfn function
---local function bash_reformat(formatfn)
---    local node, single_line_content
-
---    if vim.o.ft == '' then
---        -- Parse entire file as bash for '[No Name]' buffers
---        vim.o.ft = 'bash'
---    end
-
---    if vim.o.ft ~= 'bash' and vim.o.ft ~= 'sh' then
---        -- Parse current line only
---        single_line_content = vim.api.nvim_get_current_line()
-
---        local parser = vim.treesitter.get_string_parser(single_line_content,
---                                                        "bash", nil)
---        local tree = parser:parse({0, 1})[1]
-
---        -- The root node is a "program", we want to pass the first "command"
---        ---@diagnostic disable-next-line: missing-parameter
---        node = tree:root():child()
---    end
---    formatfn(node, single_line_content)
---end
-
--- function M.bash_argify()
---     bash_reformat(bash_fold_toggle_fn)
--- end
-
----@param lines string[]?
-local function exec2bash(lines)
-    if #lines == 0 then
-        return
+---@param node_type string
+---@param root_node? TSNode
+---@return TSNode?
+local function find_parent(node_type, root_node)
+    local node, parent
+    if root_node ~= nil then
+        node = root_node
+    else
+        node = vim.treesitter.get_node()
     end
+    if node == nil then
+        vim.notify(string.format("No %s under cursor", node_type))
+        return nil
+    end
+    parent = node
 
-    local lnum = vim.fn.line('.')
-    local out = ""
-
-    -- Remove everything before/after the array markers in the first line
-    lines[1]        = lines[1]:gsub("^[^%(%[%{]*[%(%[%{]", '')
-    lines[#lines]   = lines[#lines]:gsub("[%)%}%]][^%)%]%}]*$", '')
-
-    for _,line in pairs(lines) do
-        local words = vim.split(line, ',')
-        for _,word in pairs(words) do
-            -- Remove quotes around each argument
-            out = out .. " " .. vim.trim(word):gsub("^['\"]", '')
-                                              :gsub("['\"]$", '')
+    while parent:type() ~= node_type do
+        parent = parent:parent()
+        if parent == nil then
+            vim.notify(string.format("No %s under cursor", node_type))
+            return nil
         end
     end
-
-    local start_row = lnum - 1
-    local end_row = start_row + #lines
-    -- Remove duplicate spacing
-    local indent = string.rep(' ', vim.fn.indent(lnum))
-    out =  indent ..  out:gsub('%s+', ' ')
-    vim.api.nvim_buf_set_lines(0, start_row, end_row, true, {out})
+    return parent
 end
 
--- Create an argument array from a bash command line
----@param lines string[]?
-local function bash2exec(lines)
+-- Return a list of all direct children of `node` and the rows
+-- that the children span over.
+---@param node TSNode
+---@return TSNode[], number, number
+local function get_child_nodes(node)
+    local children = {}
+    local first = true
+    local children_start_row, children_end_row
+
+    for child in node:iter_children() do
+        local start_row, start_col, _, end_row, end_col, _ = child:range(true)
+        lines = vim.api.nvim_buf_get_lines(0, start_row, end_row + 1, false)
+        if #lines == 0 then
+            break
+        end
+        local child = vim.trim(lines[1]:sub(start_col, end_col))
+        table.insert(children, child)
+
+        if first then
+            children_start_row = start_row
+            first = false
+        end
+        children_end_row = end_row
+    end
+
+    return children, children_start_row, children_end_row
+end
+
+---@param root_node? TSNode
+---@return TSNode[], number, number
+local function find_command_child_nodes(root_node)
+    local node = find_parent('command', root_node)
+    if node == nil then
+        return {}
+    end
+
+    return get_child_nodes(node)
+end
+
+-- Convert from a bash command to an exec(...) array
+function M.convert_to_exec_array()
+    local node = nil
     local open_bracket, close_bracket
     local curly_bracket_langs = {
         'c',
@@ -71,6 +77,7 @@ local function bash2exec(lines)
         'zig',
         'lua',
     }
+
     if vim.tbl_contains(curly_bracket_langs, vim.o.ft) then
         open_bracket = '{'
         close_bracket = '}'
@@ -79,10 +86,24 @@ local function bash2exec(lines)
         close_bracket = ']'
     end
 
-    local lnum = vim.fn.line('.')
-    local children, _, _ = get_child_nodes('command', lines)
+    if vim.o.ft == '' then
+        -- Parse entire file as bash for '[No Name]' buffers
+        vim.o.ft = 'bash'
+    end
 
-    if children == nil then
+    if vim.tbl_contains({'zsh', 'bash', 'sh'}, vim.o.ft) then
+        -- Only parse the current line when the filetype is not shell
+        local line = vim.api.nvim_get_current_line()
+        local parser = vim.treesitter.get_string_parser(line, "bash", nil)
+        local tree = parser:parse({0, 1})[1]
+
+        -- The root node is a "program", we want to pass the first "command"
+        ---@diagnostic disable-next-line: missing-parameter
+        node = tree:root():child()
+    end
+
+    local children = find_command_child_nodes(node)
+    if #children == 0 then
         return
     end
 
@@ -93,22 +114,92 @@ local function bash2exec(lines)
         end
     end
 
+    local lnum = vim.fn.line('.')
     local indent = string.rep(' ', vim.fn.indent(lnum))
     local new_lines = indent .. open_bracket .. vim.fn.join(children, ', ') .. close_bracket
 
     vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, {new_lines})
 end
 
--- Convert between an exec(...) array and a bash command
-function M.convert_between_exec_array_and_bash_command()
-    if true then
-        exec2bash()
-    else
-        bash2exec()
+-- Convert an exec(...) array on the *current line* to a bash command
+-- Note: we do not rely on treesitter here, any "array" format will do.
+function M.convert_to_bash_command()
+    local line = vim.api.nvim_get_current_line()
+    local lnum = vim.fn.line('.')
+    local out = ""
+
+    -- Remove everything before/after the array markers in the first line
+    line = line:gsub("^[^%(%[%{]*[%(%[%{]", '')
+               :gsub("[%)%}%]][^%)%]%}]*$", '')
+
+    local words = vim.split(line, ',')
+    for _,word in pairs(words) do
+        -- Remove quotes around each argument
+        out = out .. " " .. vim.trim(word):gsub("^['\"]", '')
+                                          :gsub("['\"]$", '')
     end
+
+    local start_row = lnum - 1
+    local end_row = start_row + 1
+    -- Remove duplicate spacing
+    local indent = string.rep(' ', vim.fn.indent(lnum))
+    out =  indent ..  out:gsub('%s+', ' ')
+    vim.api.nvim_buf_set_lines(0, start_row, end_row, true, {out})
 end
 
 function M.convert_between_single_and_multiline_bash_command()
+    local lnum = vim.fn.line('.')
+    local indent = string.rep(' ', vim.fn.indent(lnum))
+    local extra_indent = string.rep(" ", config.bash_command_argument_indent)
+    local children, start_row, end_row = find_command_child_nodes()
+
+    if #children == 0 then
+        return
+    end
+
+    if start_row == end_row then
+        -- If the command spans a single line, unfold it with each argument on
+        -- a seperate line
+        local arr = {}
+
+        for _,word in ipairs(children) do
+            -- A flag is expected to start with '-' or '+'
+            local isflag = word:match("^[-+]") ~= nil
+            local prev_isflag = #arr > 0 and arr[#arr]:match("^[-+]") ~= nil
+            local prev_has_arg = #arr > 0  and arr[#arr]:match(" ") ~= nil
+
+            if not isflag and prev_isflag and not prev_has_arg then
+                -- Previous word was a flag and current word is not, add as an argument
+                -- unless an argument has already been provided
+                arr[#arr] = arr[#arr] .. " " .. word
+            else
+                -- Otherwise, finish up the previous row and add the current
+                -- word on a new row
+                if #arr == 1 then
+                    arr[#arr] = indent .. arr[#arr] .. " \\"
+                elseif #arr > 1 then
+                    arr[#arr] = indent .. extra_indent .. arr[#arr] .. " \\"
+                end
+                table.insert(arr, vim.trim(word))
+            end
+        end
+
+        -- Indent last row
+        arr[#arr] = indent .. extra_indent .. arr[#arr]
+
+        vim.notify("Unfolding line " .. lnum)
+        vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, arr)
+    else
+        -- If the command spans more than one row, re-format it to one line
+        if #children <= 2 then
+            vim.notify("Nothing to fold")
+            return
+        end
+
+        vim.notify("Folding line " .. lnum)
+        local replacement = { indent .. vim.fn.join(children, " ") }
+        vim.api.nvim_buf_set_lines(0, start_row, end_row + 1, false, replacement)
+    end
 end
 
 -- Toggle between a single line argument list and a multiline argument list
@@ -271,4 +362,3 @@ function M.setup(user_opts)
 end
 
 return M
-
