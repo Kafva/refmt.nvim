@@ -31,46 +31,47 @@ end
 -- Return a list of all direct children of `node` and the rows
 -- that the children span over.
 ---@param node TSNode
----@return TSNode[], number, number
-local function get_child_nodes(node)
-    local children = {}
+---@return string[], number, number
+local function get_child_values(node)
+    local words = {}
     local first = true
     local children_start_row, children_end_row
 
     for child in node:iter_children() do
         local start_row, start_col, _, end_row, end_col, _ = child:range(true)
-        lines = vim.api.nvim_buf_get_lines(0, start_row, end_row + 1, false)
-        if #lines == 0 then
-            break
-        end
-        local child = vim.trim(lines[1]:sub(start_col, end_col))
-        table.insert(children, child)
-
         if first then
             children_start_row = start_row
             first = false
         end
         children_end_row = end_row
+
+        local lines = vim.api.nvim_buf_get_lines(0, start_row, end_row + 1, false)
+        if #lines == 0 then
+            break
+        end
+
+        local word = vim.trim(lines[1]:sub(start_col, end_col))
+        table.insert(words, word)
     end
 
-    return children, children_start_row, children_end_row
+    return words, children_start_row, children_end_row
 end
 
 -- Return a list of all direct children of `node`.
 -- The node should be from the `line` string.
 ---@param node TSNode
 ---@param line string
----@return TSNode[]
-local function get_child_nodes_from_line(node, line)
-    local children = {}
+---@return string[]
+local function get_child_values_from_line(node, line)
+    local words = {}
 
     for child in node:iter_children() do
         local _, start_col, _, _, end_col, _ = child:range(true)
-        local child = vim.trim(line:sub(start_col, end_col))
-        table.insert(children, child)
+        local word = vim.trim(line:sub(start_col, end_col))
+        table.insert(words, word)
     end
 
-    return children
+    return words
 end
 
 -- Convert from a bash command to an exec(...) array
@@ -96,13 +97,13 @@ function M.convert_to_exec_array()
         vim.o.ft = 'bash'
     end
 
-    local children
+    local words
     if vim.tbl_contains({'zsh', 'bash', 'sh'}, vim.o.ft) then
         local node = find_parent('command')
         if node == nil then
             return
         end
-        children, _, _ = get_child_nodes(node)
+        words, _, _ = get_child_values(node)
     else
         -- Only parse the current line when the filetype is not shell
         local line = vim.api.nvim_get_current_line()
@@ -115,23 +116,23 @@ function M.convert_to_exec_array()
         if node == nil then
             return
         end
-        children = get_child_nodes_from_line(node, line)
+        words = get_child_values_from_line(node, line)
     end
 
-    if #children == 0 then
+    if #words == 0 then
         return
     end
 
     -- Qoute every word
-    for i,word in ipairs(children) do
+    for i,word in ipairs(words) do
         if not vim.startswith(word, '"') then
-            children[i] = '"' .. word .. '"'
+            words[i] = '"' .. word .. '"'
         end
     end
 
     local lnum = vim.fn.line('.')
     local indent = string.rep(' ', vim.fn.indent(lnum))
-    local new_lines = indent .. open_bracket .. vim.fn.join(children, ', ') .. close_bracket
+    local new_lines = indent .. open_bracket .. vim.fn.join(words, ', ') .. close_bracket
 
     vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, {new_lines})
 end
@@ -169,23 +170,23 @@ function M.convert_to_bash_command()
 end
 
 function M.convert_between_single_and_multiline_bash_command()
+    if vim.tbl_contains({'', 'text'}, vim.o.ft) then
+        -- Parse entire file as bash for '[No Name]' and plaintext buffers
+        vim.o.ft = 'bash'
+    end
+
     local lnum = vim.fn.line('.')
     local indent = string.rep(' ', vim.fn.indent(lnum))
     local extra_indent = string.rep(" ", config.bash_command_argument_indent)
-
-    if vim.o.ft == '' then
-        -- Parse entire file as bash for '[No Name]' buffers
-        vim.o.ft = 'bash'
-    end
 
     local node = find_parent('command')
     if node == nil then
         return
     end
 
-    local children, start_row, end_row = get_child_nodes(node)
+    local words, start_row, end_row = get_child_values(node)
 
-    if #children == 0 then
+    if #words == 0 then
         return
     end
 
@@ -194,7 +195,7 @@ function M.convert_between_single_and_multiline_bash_command()
         -- a seperate line
         local arr = {}
 
-        for _,word in ipairs(children) do
+        for _,word in ipairs(words) do
             -- A flag is expected to start with '-' or '+'
             local isflag = word:match("^[-+]") ~= nil
             local prev_isflag = #arr > 0 and arr[#arr]:match("^[-+]") ~= nil
@@ -223,13 +224,13 @@ function M.convert_between_single_and_multiline_bash_command()
         vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, arr)
     else
         -- If the command spans more than one row, re-format it to one line
-        if #children <= 2 then
+        if #words <= 2 then
             vim.notify("Nothing to fold")
             return
         end
 
         vim.notify("Folding line " .. lnum)
-        local replacement = { indent .. vim.fn.join(children, " ") }
+        local replacement = { indent .. vim.fn.join(words, " ") }
         vim.api.nvim_buf_set_lines(0, start_row, end_row + 1, false, replacement)
     end
 end

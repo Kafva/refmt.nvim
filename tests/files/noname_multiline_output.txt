@@ -1,0 +1,23 @@
+/Applications/Firefox\ Nightly.app/Contents/MacOS/plugin-container.app/Contents/MacOS/plugin-container \
+    -isForBrowser \
+    -prefsHandle 0 \
+    -prefsLen 38346 \
+    -prefMapHandle 1 \
+    -prefMapSize 266618 \
+    -jsInitHandle 2 \
+    -jsInitLen 258888 \
+    -sbStartup \
+    -sbAppPath /Applications/Firefox\ Nightly.app \
+    -sbLevel 3 \
+    -parentBuildID 20250106175544 \
+    -ipcHandle 0 \
+    -initialChannelId {31effb08-7cdb-4edc-8978-fc9016400b3b} \
+    -parentPid 15911 \
+    -greomni /Applications/Firefox\ Nightly.app/Contents/Resources/omni.ja \
+    -appomni /Applications/Firefox\ Nightly.app/Contents/Resources/browser/omni.ja \
+    -appDir /Applications/Firefox\ Nightly.app/Contents/Resources/browser \
+    -profile /Users/user/Library/Application \
+    Support/Firefox/Profiles/a8hixo3o.default-nightly \
+    org.mozilla.machname.1767937313 \
+    6 \
+    tab
