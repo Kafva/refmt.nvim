@@ -1,0 +1,1 @@
+["/System/Library/Frameworks/CoreServices.framework/Frameworks/Metadata.framework/Versions/A/Support/mdbulkimport", "-s", "mdworker-bundle", "-c", "MDSImporterBundleFinder", "-m", "com.apple.metadata.mdbulkimport"]

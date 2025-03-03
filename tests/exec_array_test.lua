@@ -21,9 +21,10 @@ M.before_each = function()
 end
 
 table.insert(M.testcases, {
-    desc = 'Convert from a bash command to an exec(...) array in a shell script',
+    desc = 'Convert between bash commands and exec(...) arrays in a shell script',
     fn = function()
         vim.cmd [[edit tests/files/exec_array_input.sh]]
+        local initial_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
 
         vim.api.nvim_win_set_cursor(0, { 1, 0 })
         require('refmt').convert_to_exec_array()
@@ -32,6 +33,19 @@ table.insert(M.testcases, {
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
 
         tsst.assert_eql_file("tests/files/exec_array_output.sh", lines)
+
+        -- Reopen the file to avoid timing issues
+        vim.cmd "bd"
+        vim.cmd "edit tests/files/exec_array_input.sh"
+
+        -- Revert
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
+        require('refmt').convert_to_bash_command()
+
+        vim.cmd "silent write!"
+        local reverted_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
+
+        tsst.assert_eql_tables(initial_lines, reverted_lines)
     end,
 })
 
@@ -59,21 +73,20 @@ table.insert(M.testcases, {
     end,
 })
 
--- table.insert(M.testcases, {
---     desc = 'Convert from an exec(...) array to a bash command in a shell script',
---     fn = function()
---         -- XXX: inverse check
---         vim.cmd [[edit tests/files/exec_array_output.sh]]
+table.insert(M.testcases, {
+    desc = 'Convert between bash commands and exec(...) arrays in a [No name] buffer',
+    fn = function()
+        local initial_lines = {
+            "/System/Library/Frameworks/CoreServices.framework/Frameworks/Metadata.framework/Versions/A/Support/mdbulkimport -s mdworker-bundle -c MDSImporterBundleFinder -m com.apple.metadata.mdbulkimport"
+        }
+        vim.api.nvim_buf_set_lines(0, 0, 0, false, initial_lines)
 
---         vim.api.nvim_win_set_cursor(0, { 1, 0 })
---         require('refmt').convert_to_bash_command()
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
+        require('refmt').convert_to_exec_array()
 
---         vim.cmd [[silent write!]]
---         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-
---         tsst.assert_eql_file("tests/files/exec_array_input.sh", lines)
---     end,
--- })
-
+        local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
+        tsst.assert_eql_file("tests/files/noname_exec_array_output.txt", lines)
+    end,
+})
 
 return M

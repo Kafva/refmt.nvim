@@ -33,11 +33,11 @@ table.insert(M.testcases, {
         -- XXX: `nvim_buf_get_lines()` truncates long lines...
         vim.cmd "silent write!"
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        vim.cmd "bd"
 
         tsst.assert_eql_file("tests/files/bash_multiline_output.sh", lines)
 
         -- Reopen the file to avoid timing issues
+        vim.cmd "bd"
         vim.cmd "edit tests/files/bash_multiline_input.sh"
 
         -- Revert
@@ -54,9 +54,10 @@ table.insert(M.testcases, {
 table.insert(M.testcases, {
     desc = 'Unfold single line command with spaces in [No name] buffer',
     fn = function()
-        vim.api.nvim_buf_set_lines(0, 0, 0, false, {
+        local initial_lines = {
             "/Applications/Firefox\\ Nightly.app/Contents/MacOS/plugin-container.app/Contents/MacOS/plugin-container -isForBrowser -prefsHandle 0 -prefsLen 38346 -prefMapHandle 1 -prefMapSize 266618 -jsInitHandle 2 -jsInitLen 258888 -sbStartup -sbAppPath /Applications/Firefox\\ Nightly.app -sbLevel 3 -parentBuildID 20250106175544 -ipcHandle 0 -initialChannelId {31effb08-7cdb-4edc-8978-fc9016400b3b} -parentPid 15911 -greomni /Applications/Firefox\\ Nightly.app/Contents/Resources/omni.ja -appomni /Applications/Firefox\\ Nightly.app/Contents/Resources/browser/omni.ja -appDir /Applications/Firefox\\ Nightly.app/Contents/Resources/browser -profile /Users/user/Library/Application Support/Firefox/Profiles/a8hixo3o.default-nightly org.mozilla.machname.1767937313 6 tab"
-        })
+        }
+        vim.api.nvim_buf_set_lines(0, 0, 0, false, initial_lines)
 
         -- Unfold into multiple lines
         vim.api.nvim_win_set_cursor(0, { 1, 0 })
