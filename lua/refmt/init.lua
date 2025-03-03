@@ -28,7 +28,7 @@ local function find_parent(node_type, root_node)
     return parent
 end
 
--- Return a list of all direct children of `node` and the rows
+-- Return the values of all direct child nodes of `node` and the rows
 -- that the children span over.
 ---@param node TSNode
 ---@return string[], number, number
@@ -57,8 +57,8 @@ local function get_child_values(node)
     return words, children_start_row, children_end_row
 end
 
--- Return a list of all direct children of `node`.
--- The node should be from the `line` string.
+-- Return the values of all direct children of `node`.
+-- The `node` should have been loaded from the `line` string.
 ---@param node TSNode
 ---@param line string
 ---@return string[]
@@ -73,6 +73,8 @@ local function get_child_values_from_line(node, line)
 
     return words
 end
+
+--------------------------------------------------------------------------------
 
 -- Convert from a bash command to an exec(...) array
 function M.convert_to_exec_array()
@@ -142,7 +144,6 @@ end
 function M.convert_to_bash_command()
     local line = vim.api.nvim_get_current_line()
     local lnum = vim.fn.line('.')
-    local out = ""
 
     if #line < 3 then
         return
@@ -155,18 +156,19 @@ function M.convert_to_bash_command()
     line = line:sub(2, #line - 1)
 
     local words = vim.split(line, ',')
-    for _,word in pairs(words) do
-        -- Remove quotes around each argument
-        out = out .. " " .. vim.trim(word):gsub("^['\"]", '')
-                                          :gsub("['\"]$", '')
+    for i,word in pairs(words) do
+        -- Remove quotes around each argument and all extra spacing
+        words[i] = vim.trim(word):gsub("^['\"]", '')
+                                 :gsub("['\"]$", '')
+                                 :gsub('%s+', ' ')
     end
 
     local start_row = lnum - 1
     local end_row = start_row + 1
-    -- Remove duplicate spacing
     local indent = string.rep(' ', vim.fn.indent(lnum))
-    out = indent ..  out:gsub('%s+', ' ')
-    vim.api.nvim_buf_set_lines(0, start_row, end_row, true, {out})
+
+    local outline = indent .. vim.fn.join(words, ' ')
+    vim.api.nvim_buf_set_lines(0, start_row, end_row, true, {outline})
 end
 
 function M.convert_between_single_and_multiline_bash_command()

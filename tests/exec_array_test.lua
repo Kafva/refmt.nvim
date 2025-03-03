@@ -40,7 +40,16 @@ table.insert(M.testcases, {
     fn = function()
         vim.cmd [[edit tests/files/exec_array_input.py]]
 
+        -- Convert first line to bash statement
         vim.api.nvim_win_set_cursor(0, { 1, 0 })
+        require('refmt').convert_to_bash_command()
+
+        -- Convert same line with indentation to bash statement
+        vim.api.nvim_win_set_cursor(0, { 4, 0 })
+        require('refmt').convert_to_bash_command()
+
+        -- Convert bash statement into exec(...) array
+        vim.api.nvim_win_set_cursor(0, { 7, 0 })
         require('refmt').convert_to_exec_array()
 
         vim.cmd [[silent write!]]
