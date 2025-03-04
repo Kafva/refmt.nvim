@@ -6,6 +6,19 @@ M.default_opts = {
     -- How much to indent arguments to a bash command when expanded into a
     -- multiline call.
     bash_command_argument_indent = 4,
+    -- Filetypes to insert trailing commas for when expanding argument lists
+    -- onto multiple lines
+    trailing_comma_filetypes = {
+        'zig'
+    },
+    -- Filetypes to use {...} instead of [...] in when translating commands into
+    -- exec(...) arrays
+    curly_bracket_filetypes = {
+        'c',
+        'cpp',
+        'zig',
+        'lua',
+    },
 }
 
 ---@param user_opts RefmtOptions?

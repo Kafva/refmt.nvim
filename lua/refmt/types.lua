@@ -1,3 +1,5 @@
 ---@class RefmtOptions
 ---@field default_bindings? boolean
 ---@field bash_command_argument_indent? number
+---@field trailing_comma_filetypes? string[]
+---@field curly_bracket_filetypes? string[]

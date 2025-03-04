@@ -77,14 +77,8 @@ end
 -- Convert from a bash command to an exec(...) array
 function M.convert_to_exec_array()
     local open_bracket, close_bracket
-    local curly_bracket_langs = {
-        'c',
-        'cpp',
-        'zig',
-        'lua',
-    }
 
-    if vim.tbl_contains(curly_bracket_langs, vim.o.ft) then
+    if vim.tbl_contains(config.curly_bracket_filetypes, vim.o.ft) then
         open_bracket = '{'
         close_bracket = '}'
     else
@@ -244,16 +238,12 @@ function M.convert_between_single_and_multiline_argument_lists()
         'parameters',               -- Zig, Rust etc.
     }
     local params_child_names = {
-        -- Parameter types
         'parameter_declaration',    -- C
         'parameter',                -- Zig, Rust etc.
     }
     local func_call_parent_lists = {
         'argument_list',            -- C
         'arguments',                -- Lua
-    }
-    local trailing_comma_filetypes = {
-        'zig'
     }
 
     local window = vim.api.nvim_get_current_win()
@@ -326,7 +316,7 @@ function M.convert_between_single_and_multiline_argument_lists()
         new_lines[1] = "" -- initial newline
         for i, param in ipairs(params) do
             local value = indent_params .. param
-            if i < #params or vim.tbl_contains(trailing_comma_filetypes, vim.o.ft) then
+            if i < #params or vim.tbl_contains(config.trailing_comma_filetypes, vim.o.ft) then
                 value = value .. ","
             end
             table.insert(new_lines, value)
