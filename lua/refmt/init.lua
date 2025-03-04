@@ -2,26 +2,24 @@ local M = {}
 
 local config = require 'refmt.config'
 
----@param node_type string
+---@param node_types string[]
 ---@param root_node? TSNode
 ---@return TSNode?
-local function find_parent(node_type, root_node)
+local function find_parent(node_types, root_node)
     local node, parent
     if root_node ~= nil then
         node = root_node
     else
         node = vim.treesitter.get_node()
         if node == nil then
-            vim.notify(string.format("No %s under cursor", node_type))
             return nil
         end
     end
     parent = node
 
-    while parent:type() ~= node_type do
+    while not vim.tbl_contains(node_types, parent:type()) do
         parent = parent:parent()
         if parent == nil then
-            vim.notify(string.format("No %s under cursor", node_type))
             return nil
         end
     end
@@ -101,8 +99,9 @@ function M.convert_to_exec_array()
 
     local words
     if vim.tbl_contains({'zsh', 'bash', 'sh'}, vim.o.ft) then
-        local node = find_parent('command')
+        local node = find_parent({'command'})
         if node == nil then
+            vim.notify("No command found under cursor")
             return
         end
         words, _, _ = get_child_values(node)
@@ -181,8 +180,9 @@ function M.convert_between_single_and_multiline_bash_command()
     local indent = string.rep(' ', vim.fn.indent(lnum))
     local extra_indent = string.rep(" ", config.bash_command_argument_indent)
 
-    local node = find_parent('command')
+    local node = find_parent({'command'})
     if node == nil then
+        vim.notify("No command found under cursor")
         return
     end
 
@@ -239,39 +239,34 @@ end
 
 -- Toggle between a single line argument list and a multiline argument list
 function M.convert_between_single_and_multiline_argument_lists()
-    local parent_names = {
-        -- Function declarations
+    local params_parent_list = {
         'parameter_list',           -- C
         'parameters',               -- Zig, Rust etc.
-        -- Function calls
-        'argument_list',            -- C
-        'arguments',                -- Lua
     }
-    local child_names = {
+    local params_child_names = {
         -- Parameter types
         'parameter_declaration',    -- C
         'parameter',                -- Zig, Rust etc.
-        -- Argument types
-        'identifier', 'number', 'string'
     }
+    local func_call_parent_lists = {
+        'argument_list',            -- C
+        'arguments',                -- Lua
+    }
+    -- All direct children are considered valid for function calls
+
     local window = vim.api.nvim_get_current_win()
     local start_pos = vim.api.nvim_win_get_cursor(window)
+    local is_func_call = false
     local is_multiline = false
 
-    local node = vim.treesitter.get_node()
-    if node == nil then
-        vim.notify("No parameters under cursor")
-        return
-    end
-    local parent = node
-
-    while not vim.tbl_contains(parent_names, parent:type()) do
-        ---@diagnostic disable-next-line: cast-local-type
-        parent = parent:parent()
+    local parent = find_parent(params_parent_list)
+    if parent == nil then
+        parent = find_parent(func_call_parent_lists)
         if parent == nil then
-            vim.notify("No paramters under cursor")
+            vim.notify("No parameter list found under cursor")
             return
         end
+        is_func_call = true
     end
 
     -- Parse out each parameter
@@ -279,34 +274,41 @@ function M.convert_between_single_and_multiline_argument_lists()
     local start_col_params, start_row_params, end_col_params, end_row_params
     local first = true
     for child in parent:iter_children() do
-        if vim.tbl_contains(child_names, child:type()) then
-            local start_row, start_col, _, end_row, end_col, _ = child:range(true)
-            local lines = vim.api.nvim_buf_get_lines(0, start_row, end_row + 1, false)
-            if #lines == 0 then
-                break
+        if not is_func_call then
+            -- Skip over child nodes that are not relevant
+            if not vim.tbl_contains(params_child_names, child:type()) then
+                goto continue
             end
-
-            if first then
-                start_row_params = start_row
-                start_col_params = start_col
-                first = false
-            end
-            end_row_params = end_row
-            end_col_params = end_col
-
-            if start_row > start_pos[1] then
-                is_multiline = true
-            end
-            local param = vim.trim(lines[1]:sub(start_col, end_col))
-            -- '(' is part of the parameter list but ')' is not(?)
-            if vim.startswith(param, "(") then
-                param = param:sub(2, #param)
-            elseif vim.endswith(param, ")") then
-                param = param:sub(1, #param - 1)
-            end
-
-            table.insert(params, param)
         end
+
+        local start_row, start_col, _, end_row, end_col, _ = child:range(true)
+        local lines = vim.api.nvim_buf_get_lines(0, start_row, end_row + 1, false)
+        if #lines == 0 then
+            break
+        end
+
+        if first then
+            start_row_params = start_row
+            start_col_params = start_col
+            first = false
+        end
+        end_row_params = end_row
+        end_col_params = end_col
+
+        if start_row > start_pos[1] then
+            is_multiline = true
+        end
+        local param = vim.trim(lines[1]:sub(start_col, end_col))
+        -- '(' is part of the parameter list but ')' is not(?)
+        if vim.startswith(param, "(") then
+            param = param:sub(2, #param)
+        elseif vim.endswith(param, ")") then
+            param = param:sub(1, #param - 1)
+        end
+
+        table.insert(params, param)
+
+        ::continue::
     end
 
     local new_lines = {}

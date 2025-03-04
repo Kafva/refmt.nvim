@@ -28,7 +28,7 @@ table.insert(M.testcases, {
         local initial_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
 
         -- Unfold into multiple lines
-        vim.api.nvim_win_set_cursor(0, { 1, 0 })
+        vim.api.nvim_win_set_cursor(0, { 3, 30 })
         require('refmt').convert_between_single_and_multiline_argument_lists()
 
         vim.cmd "silent write!"
