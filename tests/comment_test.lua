@@ -3,18 +3,13 @@ require('refmt').setup {}
 local M = {}
 
 local tsst = require 'tsst'
+local fixture = require 'tests.fixture'
+
+fixture.load_parsers()
+
+M.before_each = fixture.before_each
 
 M.testcases = {}
-
--- Add required parsers
-vim.treesitter.language.add('c', { path = "./tests/parser/c.so" })
-
-M.before_each = function()
-    -- Close all open files
-    repeat
-        vim.cmd [[bd!]]
-    until vim.fn.expand '%' == ''
-end
 
 table.insert(M.testcases, {
     desc = 'Convert multiline // comments into /** ... */ comments',

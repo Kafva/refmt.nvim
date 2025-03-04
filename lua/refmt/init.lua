@@ -101,7 +101,7 @@ function M.convert_to_exec_array()
     if vim.tbl_contains({'zsh', 'bash', 'sh'}, vim.o.ft) then
         local node = find_parent({'command'})
         if node == nil then
-            vim.notify("No command found under cursor")
+            vim.notify("No command under cursor")
             return
         end
         words, _, _ = get_child_values(node)
@@ -182,7 +182,7 @@ function M.convert_between_single_and_multiline_bash_command()
 
     local node = find_parent({'command'})
     if node == nil then
-        vim.notify("No command found under cursor")
+        vim.notify("No command under cursor")
         return
     end
 
@@ -252,7 +252,9 @@ function M.convert_between_single_and_multiline_argument_lists()
         'argument_list',            -- C
         'arguments',                -- Lua
     }
-    -- All direct children are considered valid for function calls
+    local trailing_comma_filetypes = {
+        'zig'
+    }
 
     local window = vim.api.nvim_get_current_win()
     local start_pos = vim.api.nvim_win_get_cursor(window)
@@ -263,7 +265,7 @@ function M.convert_between_single_and_multiline_argument_lists()
     if parent == nil then
         parent = find_parent(func_call_parent_lists)
         if parent == nil then
-            vim.notify("No parameter list found under cursor")
+            vim.notify("No parameter list under cursor")
             return
         end
         is_func_call = true
@@ -324,7 +326,7 @@ function M.convert_between_single_and_multiline_argument_lists()
         new_lines[1] = "" -- initial newline
         for i, param in ipairs(params) do
             local value = indent_params .. param
-            if i < #params then
+            if i < #params or vim.tbl_contains(trailing_comma_filetypes, vim.o.ft) then
                 value = value .. ","
             end
             table.insert(new_lines, value)

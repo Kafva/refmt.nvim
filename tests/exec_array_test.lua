@@ -3,22 +3,13 @@ require('refmt').setup {}
 local M = {}
 
 local tsst = require 'tsst'
+local fixture = require 'tests.fixture'
+
+fixture.load_parsers()
+
+M.before_each = fixture.before_each
 
 M.testcases = {}
-
--- Add required parsers
-vim.treesitter.language.add('bash', { path = "./tests/parser/bash.so" })
-vim.treesitter.language.register("bash", "sh")
-
-M.before_each = function()
-    -- Close all open files
-    repeat
-        vim.cmd [[bd!]]
-    until vim.fn.expand '%' == ''
-
-    -- Restore files
-    vim.system({ 'git', 'checkout', 'tests/files' }):wait()
-end
 
 table.insert(M.testcases, {
     desc = 'Convert between bash commands and exec(...) arrays in a shell script',
