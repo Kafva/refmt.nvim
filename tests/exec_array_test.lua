@@ -20,22 +20,14 @@ table.insert(M.testcases, {
         vim.api.nvim_win_set_cursor(0, { 1, 0 })
         require('refmt').convert_to_exec_array()
 
-        vim.cmd [[silent write!]]
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-
         tsst.assert_eql_file("tests/files/exec_array_output.sh", lines)
-
-        -- Reopen the file to avoid timing issues
-        vim.cmd "bd"
-        vim.cmd "edit tests/files/exec_array_input.sh"
 
         -- Revert
         vim.api.nvim_win_set_cursor(0, { 1, 0 })
         require('refmt').convert_to_bash_command()
 
-        vim.cmd "silent write!"
         local reverted_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-
         tsst.assert_eql_tables(initial_lines, reverted_lines)
     end,
 })
@@ -57,9 +49,7 @@ table.insert(M.testcases, {
         vim.api.nvim_win_set_cursor(0, { 7, 0 })
         require('refmt').convert_to_exec_array()
 
-        vim.cmd [[silent write!]]
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-
         tsst.assert_eql_file("tests/files/exec_array_output.py", lines)
     end,
 })

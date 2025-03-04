@@ -30,9 +30,7 @@ table.insert(M.testcases, {
         vim.api.nvim_win_set_cursor(0, { 32, 0 })
         require('refmt').convert_comment_slash_to_asterisk()
 
-        vim.cmd [[silent write!]]
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-
         tsst.assert_eql_file("tests/files/comment_output.c", lines)
     end,
 })

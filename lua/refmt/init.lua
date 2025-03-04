@@ -75,6 +75,7 @@ end
 --------------------------------------------------------------------------------
 
 -- Convert from a bash command to an exec(...) array
+---@return string[]
 function M.convert_to_exec_array()
     local open_bracket, close_bracket
 
@@ -96,7 +97,7 @@ function M.convert_to_exec_array()
         local node = find_parent({'command'})
         if node == nil then
             vim.notify("No command under cursor")
-            return
+            return {}
         end
         words, _, _ = get_child_values(node)
     else
@@ -109,13 +110,13 @@ function M.convert_to_exec_array()
         ---@diagnostic disable-next-line: missing-parameter
         local node = tree:root():child()
         if node == nil then
-            return
+            return {}
         end
         words = get_child_values_from_line(node, line)
     end
 
     if #words == 0 then
-        return
+        return {}
     end
 
     -- Qoute every word
@@ -127,19 +128,21 @@ function M.convert_to_exec_array()
 
     local lnum = vim.fn.line('.')
     local indent = string.rep(' ', vim.fn.indent(lnum))
-    local new_lines = indent .. open_bracket .. vim.fn.join(words, ', ') .. close_bracket
+    local new_line = indent .. open_bracket .. vim.fn.join(words, ', ') .. close_bracket
 
-    vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, {new_lines})
+    vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, {new_line})
+    return {new_line}
 end
 
 -- Convert an exec(...) array on the *current line* to a bash command
 -- Note: we do not rely on treesitter here, any "array" format will do.
+---@return string[]
 function M.convert_to_bash_command()
     local line = vim.api.nvim_get_current_line()
     local lnum = vim.fn.line('.')
 
     if #line < 3 then
-        return
+        return {}
     end
 
     -- Remove everything before/after the array markers in the first line
@@ -162,8 +165,10 @@ function M.convert_to_bash_command()
 
     local outline = indent .. vim.fn.join(words, ' ')
     vim.api.nvim_buf_set_lines(0, start_row, end_row, true, {outline})
+    return {outline}
 end
 
+---@return string[]
 function M.convert_between_single_and_multiline_bash_command()
     if vim.tbl_contains({'', 'text'}, vim.o.ft) then
         -- Parse entire file as bash for '[No Name]' and plaintext buffers
@@ -177,61 +182,64 @@ function M.convert_between_single_and_multiline_bash_command()
     local node = find_parent({'command'})
     if node == nil then
         vim.notify("No command under cursor")
-        return
+        return {}
     end
 
     local words, start_row, end_row = get_child_values(node)
 
     if #words == 0 then
-        return
+        return {}
     end
 
+    local new_lines = {}
     if start_row == end_row then
         -- If the command spans a single line, unfold it with each argument on
         -- a seperate line
-        local arr = {}
 
         for _,word in ipairs(words) do
             -- A flag is expected to start with '-' or '+'
             local isflag = word:match("^[-+]") ~= nil
-            local prev_isflag = #arr > 0 and arr[#arr]:match("^[-+]") ~= nil
-            local prev_has_arg = #arr > 0  and arr[#arr]:match(" ") ~= nil
+            local prev_isflag = #new_lines > 0 and new_lines[#new_lines]:match("^[-+]") ~= nil
+            local prev_has_arg = #new_lines > 0  and new_lines[#new_lines]:match(" ") ~= nil
 
             if not isflag and prev_isflag and not prev_has_arg then
                 -- Previous word was a flag and current word is not, add as an argument
                 -- unless an argument has already been provided
-                arr[#arr] = arr[#arr] .. " " .. word
+                new_lines[#new_lines] = new_lines[#new_lines] .. " " .. word
             else
                 -- Otherwise, finish up the previous row and add the current
                 -- word on a new row
-                if #arr == 1 then
-                    arr[#arr] = indent .. arr[#arr] .. " \\"
-                elseif #arr > 1 then
-                    arr[#arr] = indent .. extra_indent .. arr[#arr] .. " \\"
+                if #new_lines == 1 then
+                    new_lines[#new_lines] = indent .. new_lines[#new_lines] .. " \\"
+                elseif #new_lines > 1 then
+                    new_lines[#new_lines] = indent .. extra_indent .. new_lines[#new_lines] .. " \\"
                 end
-                table.insert(arr, vim.trim(word))
+                table.insert(new_lines, vim.trim(word))
             end
         end
 
         -- Indent last row
-        arr[#arr] = indent .. extra_indent .. arr[#arr]
+        new_lines[#new_lines] = indent .. extra_indent .. new_lines[#new_lines]
 
         vim.notify("Unfolding line " .. lnum)
-        vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, arr)
+        vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, new_lines)
     else
         -- If the command spans more than one row, re-format it to one line
         if #words <= 2 then
             vim.notify("Nothing to fold")
-            return
+            return {}
         end
 
         vim.notify("Folding line " .. lnum)
-        local replacement = { indent .. vim.fn.join(words, " ") }
-        vim.api.nvim_buf_set_lines(0, start_row, end_row + 1, false, replacement)
+        new_lines = { indent .. vim.fn.join(words, " ") }
+        vim.api.nvim_buf_set_lines(0, start_row, end_row + 1, false, new_lines)
     end
+
+    return new_lines
 end
 
 -- Toggle between a single line argument list and a multiline argument list
+---@return string[]
 function M.convert_between_single_and_multiline_argument_lists()
     local params_parent_list = {
         'parameter_list',           -- C
@@ -256,7 +264,7 @@ function M.convert_between_single_and_multiline_argument_lists()
         parent = find_parent(func_call_parent_lists)
         if parent == nil then
             vim.notify("No parameter list under cursor")
-            return
+            return {}
         end
         is_func_call = true
     end
@@ -325,14 +333,16 @@ function M.convert_between_single_and_multiline_argument_lists()
     end
 
     vim.api.nvim_buf_set_text(0, start_row_params, start_col_params, end_row_params, end_col_params, new_lines)
+    return new_lines
 end
 
 -- Refactor '// ... ' comments into '/** ... */'
+---@return string[]
 function M.convert_comment_slash_to_asterisk()
     local window = vim.api.nvim_get_current_win()
     local start_pos = vim.api.nvim_win_get_cursor(window)
     local first = true
-    local arr = {}
+    local new_lines = {}
     local indent = ''
     -- Skip over leading whitespace to make sure we land on a TSNode...
     vim.cmd[[silent normal! w]]
@@ -343,7 +353,7 @@ function M.convert_comment_slash_to_asterisk()
         if node == nil or node:type() ~= 'comment' then
             if first then
                 vim.notify("No comment under cursor")
-                return
+                return {}
             else
                 -- No more comment lines
                 break
@@ -358,11 +368,11 @@ function M.convert_comment_slash_to_asterisk()
 
         if not vim.startswith(vim.trim(line), '//') then
             vim.notify("Comment prefix must be '//' for conversion")
-            return
+            return {}
         end
         local content, _ = vim.trim(line):gsub('///*%s*', '')
 
-        table.insert(arr, indent .. " * " .. content)
+        table.insert(new_lines, indent .. " * " .. content)
 
         -- Move to next line
         vim.api.nvim_win_set_cursor(window, { start_pos[1] + i, 0 })
@@ -373,16 +383,17 @@ function M.convert_comment_slash_to_asterisk()
     end
 
     local end_line
-    if #arr == 1 then
-        arr[1] = arr[1]:gsub(' %* ', '/** ') .. " */"
+    if #new_lines == 1 then
+        new_lines[1] = new_lines[1]:gsub(' %* ', '/** ') .. " */"
         end_line = start_pos[1]
     else
-        table.insert(arr, 1, indent .. '/**')
-        table.insert(arr, indent .. ' */')
-        end_line = start_pos[1] + (#arr - 3)
+        table.insert(new_lines, 1, indent .. '/**')
+        table.insert(new_lines, indent .. ' */')
+        end_line = start_pos[1] + (#new_lines - 3)
     end
 
-    vim.api.nvim_buf_set_lines(0, start_pos[1] - 1, end_line, true, arr)
+    vim.api.nvim_buf_set_lines(0, start_pos[1] - 1, end_line, true, new_lines)
+    return new_lines
 end
 
 ---@param user_opts RefmtOptions?
