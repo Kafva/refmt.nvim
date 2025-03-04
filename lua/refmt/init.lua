@@ -177,7 +177,7 @@ function M.convert_between_single_and_multiline_bash_command()
 
     local lnum = vim.fn.line('.')
     local indent = string.rep(' ', vim.fn.indent(lnum))
-    local extra_indent = string.rep(" ", config.bash_command_argument_indent)
+    local extra_indent = string.rep(" ", vim.o.sw)
 
     local node = find_parent({'command'})
     if node == nil then
@@ -270,12 +270,16 @@ function M.convert_between_single_and_multiline_argument_lists()
     end
 
     -- Parse out each parameter
-    local params = {}
+    local words = {}
     local start_col_params, start_row_params, end_col_params, end_row_params
     local first = true
     for child in parent:iter_children() do
-        if not is_func_call then
-            -- Skip over child nodes that are not relevant
+        -- Skip over child nodes that are not relevant
+        if is_func_call then
+            if vim.tbl_contains({',', '(', ')'}, child:type()) then
+                goto continue
+            end
+        else
             if not vim.tbl_contains(params_child_names, child:type()) then
                 goto continue
             end
@@ -298,15 +302,9 @@ function M.convert_between_single_and_multiline_argument_lists()
         if start_row > start_pos[1] then
             is_multiline = true
         end
-        local param = vim.trim(lines[1]:sub(start_col, end_col))
-        -- '(' is part of the parameter list but ')' is not(?)
-        if vim.startswith(param, "(") then
-            param = param:sub(2, #param)
-        elseif vim.endswith(param, ")") then
-            param = param:sub(1, #param - 1)
-        end
 
-        table.insert(params, param)
+        local word = vim.trim(lines[1]:sub(start_col, end_col))
+        table.insert(words, word)
 
         ::continue::
     end
@@ -315,16 +313,23 @@ function M.convert_between_single_and_multiline_argument_lists()
 
     if is_multiline then
         -- Convert to single line
-        new_lines[1] = table.concat(params, ",")
+        new_lines[1] = table.concat(words, ",")
     else
         -- Convert to multiline
         local indent = string.rep(' ', vim.fn.indent(start_pos[1]))
-        local indent_params = string.rep(' ', vim.fn.indent(start_pos[1] + 1))
+        local indent_params = string.rep(' ', vim.fn.indent(start_pos[1]) + vim.o.sw)
 
         new_lines[1] = "" -- initial newline
-        for i, param in ipairs(params) do
-            local value = indent_params .. param
-            if i < #params or vim.tbl_contains(config.trailing_comma_filetypes, vim.o.ft) then
+        for i, param in ipairs(words) do
+            local value
+            if i == 1 and vim.startswith(param, "(") then
+                -- Strip leading '(' from first parameter
+                value = indent_params .. param:sub(2, #param)
+            else
+                value = indent_params .. param
+            end
+
+            if i < #words or vim.tbl_contains(config.trailing_comma_filetypes, vim.o.ft) then
                 value = value .. ","
             end
             table.insert(new_lines, value)
