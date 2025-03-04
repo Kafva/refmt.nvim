@@ -21,7 +21,6 @@ table.insert(M.testcases, {
         require('refmt').convert_between_single_and_multiline_argument_lists()
 
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-
         tsst.assert_eql_file("tests/files/arglists_output.zig", lines)
     end,
 })
@@ -36,7 +35,6 @@ table.insert(M.testcases, {
         require('refmt').convert_between_single_and_multiline_argument_lists()
 
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-
         tsst.assert_eql_file("tests/files/arglists_output.rs", lines)
     end,
 })

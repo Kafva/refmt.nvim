@@ -337,7 +337,14 @@ function M.convert_between_single_and_multiline_argument_lists()
         table.insert(new_lines, indent) -- closing bracket on newline
     end
 
-    vim.api.nvim_buf_set_text(0, start_row_params, start_col_params, end_row_params, end_col_params, new_lines)
+    vim.api.nvim_buf_set_text(
+        0,
+        start_row_params,
+        start_col_params,
+        end_row_params,
+        end_col_params,
+        new_lines
+    )
     return new_lines
 end
 

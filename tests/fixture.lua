@@ -18,6 +18,9 @@ function M.before_each()
 
     -- Restore files
     vim.system({ 'git', 'checkout', 'tests/files' }):wait()
+
+    -- Some translations are based of a preset shiftwidth
+    vim.o.sw = 4
 end
 
 

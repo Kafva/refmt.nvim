@@ -9,7 +9,8 @@ M.default_opts = {
     -- Filetypes to insert trailing commas for when expanding argument lists
     -- onto multiple lines
     trailing_comma_filetypes = {
-        'zig'
+        'zig',
+        'rust'
     },
     -- Filetypes to use {...} instead of [...] in when translating commands into
     -- exec(...) arrays
