@@ -39,4 +39,32 @@ table.insert(M.testcases, {
     end,
 })
 
+table.insert(M.testcases, {
+    desc = 'Unfold function call in C',
+    fn = function()
+        vim.cmd "edit tests/files/func_call_input.c"
+
+        -- Unfold into multiple lines
+        vim.api.nvim_win_set_cursor(0, { 4, 25 })
+        require('refmt').convert_between_single_and_multiline_argument_lists()
+
+        local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
+        tsst.assert_eql_file("tests/files/func_call_output.c", lines)
+    end,
+})
+
+table.insert(M.testcases, {
+    desc = 'Unfold function call in lua',
+    fn = function()
+        vim.cmd "edit tests/files/func_call_input.lua"
+
+        -- Unfold into multiple lines
+        vim.api.nvim_win_set_cursor(0, { 5, 66 })
+        require('refmt').convert_between_single_and_multiline_argument_lists()
+
+        local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
+        tsst.assert_eql_file("tests/files/func_call_output.lua", lines)
+    end,
+})
+
 return M

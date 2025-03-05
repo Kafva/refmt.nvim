@@ -276,6 +276,7 @@ function M.convert_between_single_and_multiline_argument_lists()
     for child in parent:iter_children() do
         -- Skip over child nodes that are not relevant
         if is_func_call then
+            --vim.notify(vim.inspect(child:type()))
             if vim.tbl_contains({',', '(', ')'}, child:type()) then
                 goto continue
             end
@@ -313,7 +314,7 @@ function M.convert_between_single_and_multiline_argument_lists()
 
     if is_multiline then
         -- Convert to single line
-        new_lines[1] = table.concat(words, ",")
+        new_lines[1] = table.concat(words, ", ")
     else
         -- Convert to multiline
         local indent = string.rep(' ', vim.fn.indent(start_pos[1]))
@@ -324,6 +325,9 @@ function M.convert_between_single_and_multiline_argument_lists()
             local value
             if i == 1 and vim.startswith(param, "(") then
                 -- Strip leading '(' from first parameter
+                value = indent_params .. param:sub(2, #param)
+            elseif vim.startswith(param, ",") then
+                -- ',' can be part of the parameter in some cases
                 value = indent_params .. param:sub(2, #param)
             else
                 value = indent_params .. param

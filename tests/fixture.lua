@@ -3,6 +3,7 @@ M = {}
 function M.load_parsers()
     -- Load all required parsers
     vim.treesitter.language.add('c', { path = "./tests/parser/c.so" })
+    vim.treesitter.language.add('lua', { path = "./tests/parser/lua.so" })
     vim.treesitter.language.add('rust', { path = "./tests/parser/rust.so" })
     vim.treesitter.language.add('zig', { path = "./tests/parser/zig.so" })
     vim.treesitter.language.add('bash', { path = "./tests/parser/bash.so" })
