@@ -242,18 +242,17 @@ end
 ---@return string[]
 function M.convert_between_single_and_multiline_argument_lists()
     local params_parent_list = {
-        'parameter_list',           -- C
-        'parameters',               -- Zig, Rust etc.
+        'parameter_list',
+        'parameters',
     }
     local params_child_names = {
-        'parameter_declaration',    -- C
-        'parameter',                -- Zig, Rust etc.
+        'parameter_declaration',
+        'parameter',
     }
     local func_call_parent_lists = {
-        'argument_list',            -- C
-        'arguments',                -- Lua
+        'argument_list',
+        'arguments',
     }
-
     local window = vim.api.nvim_get_current_win()
     local start_pos = vim.api.nvim_win_get_cursor(window)
     local is_func_call = false
@@ -271,34 +270,39 @@ function M.convert_between_single_and_multiline_argument_lists()
 
     -- Parse out each parameter
     local words = {}
-    local start_col_params, start_row_params, end_col_params, end_row_params
+    local start_col_func_name, start_row_func_name, end_col_func_name, end_row_func_name
     local first = true
     for child in parent:iter_children() do
-        -- Skip over child nodes that are not relevant
-        if is_func_call then
-            --vim.notify(vim.inspect(child:type()))
-            if vim.tbl_contains({',', '(', ')'}, child:type()) then
-                goto continue
-            end
-        else
-            if not vim.tbl_contains(params_child_names, child:type()) then
-                goto continue
-            end
+        local start_row, start_col, _, end_row, end_col, _ = child:range(true)
+
+        if first then
+            -- Save the position of the first character to replace
+            start_row_func_name = start_row
+            start_col_func_name = start_col
+            first = false
         end
 
-        local start_row, start_col, _, end_row, end_col, _ = child:range(true)
+        -- Skip over child nodes that are not relevant
+        local should_skip
+        if is_func_call then
+            should_skip = vim.tbl_contains({',', '(', ')'}, child:type())
+        else
+            should_skip = not vim.tbl_contains(params_child_names, child:type())
+        end
+
+        if should_skip then
+            -- Save the position of the last character to replace
+            if child:type() == ')' then
+                end_row_func_name = end_row
+                end_col_func_name = end_col
+            end
+            goto continue
+        end
+
         local lines = vim.api.nvim_buf_get_lines(0, start_row, end_row + 1, false)
         if #lines == 0 then
             break
         end
-
-        if first then
-            start_row_params = start_row
-            start_col_params = start_col
-            first = false
-        end
-        end_row_params = end_row
-        end_col_params = end_col
 
         if start_row > start_pos[1] then
             is_multiline = true
@@ -314,13 +318,13 @@ function M.convert_between_single_and_multiline_argument_lists()
 
     if is_multiline then
         -- Convert to single line
-        new_lines[1] = table.concat(words, ", ")
+        new_lines[1] =  '(' .. table.concat(words, ", ") .. ')'
     else
         -- Convert to multiline
         local indent = string.rep(' ', vim.fn.indent(start_pos[1]))
         local indent_params = string.rep(' ', vim.fn.indent(start_pos[1]) + vim.o.sw)
 
-        new_lines[1] = "" -- initial newline
+        new_lines[1] = "(" -- initial newline
         for i, param in ipairs(words) do
             local value
             if i == 1 and vim.startswith(param, "(") then
@@ -338,15 +342,15 @@ function M.convert_between_single_and_multiline_argument_lists()
             end
             table.insert(new_lines, value)
         end
-        table.insert(new_lines, indent) -- closing bracket on newline
+        table.insert(new_lines, indent .. ')') -- closing bracket on newline
     end
 
     vim.api.nvim_buf_set_text(
         0,
-        start_row_params,
-        start_col_params,
-        end_row_params,
-        end_col_params,
+        start_row_func_name,
+        start_col_func_name,
+        end_row_func_name,
+        end_col_func_name,
         new_lines
     )
     return new_lines
