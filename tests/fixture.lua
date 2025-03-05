@@ -1,5 +1,7 @@
 M = {}
 
+local tsst = require 'tsst'
+
 function M.load_parsers()
     -- Load all required parsers
     vim.treesitter.language.add('c', { path = "./tests/parser/c.so" })
@@ -22,6 +24,25 @@ function M.before_each()
 
     -- Some translations are based of a preset shiftwidth
     vim.o.sw = 4
+end
+
+---@param inputfile string
+---@param initial_lines string[]
+---@param pos integer[]
+---@param revert_fn function
+function M.check_reverted(inputfile, initial_lines, pos, revert_fn)
+    -- Reopen the inputfile to avoid timing issues
+    vim.cmd "silent write"
+    vim.cmd "bd"
+    vim.cmd("edit " .. inputfile)
+
+    -- Revert with the provided function
+    vim.api.nvim_win_set_cursor(0, pos)
+    revert_fn()
+
+    -- Check reverted output with original lines
+    local reverted_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
+    tsst.assert_eql_tables(initial_lines, reverted_lines)
 end
 
 
