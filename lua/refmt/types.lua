@@ -2,3 +2,4 @@
 ---@field default_bindings? boolean
 ---@field trailing_comma_filetypes? string[]
 ---@field curly_bracket_filetypes? string[]
+---@field shell_filetypes? string[]

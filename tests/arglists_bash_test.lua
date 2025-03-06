@@ -14,23 +14,23 @@ M.testcases = {}
 table.insert(M.testcases, {
     desc = 'Unfold and refold single line command',
     fn = function()
-        vim.cmd "edit tests/files/bash_multiline_input.sh"
+        vim.cmd "edit tests/files/arglists_bash_input.sh"
         local initial_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
 
         -- Unfold into multiple lines
         vim.api.nvim_win_set_cursor(0, { 1, 0 })
-        require('refmt').convert_between_single_and_multiline_bash_command()
+        require('refmt').convert_between_single_and_multiline_argument_lists()
 
         -- XXX: `nvim_buf_get_lines()` truncates long lines...
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        tsst.assert_eql_file("tests/files/bash_multiline_output.sh", lines)
+        tsst.assert_eql_file("tests/files/arglists_bash_output.sh", lines)
 
         -- Verify that we can refold into the original content
         fixture.check_reverted(
-            "tests/files/bash_multiline_input.sh",
+            "tests/files/arglists_bash_input.sh",
             initial_lines,
             {1, 0},
-            require('refmt').convert_between_single_and_multiline_bash_command
+            require('refmt').convert_between_single_and_multiline_argument_lists
         )
     end,
 })
@@ -45,7 +45,7 @@ table.insert(M.testcases, {
 
         -- Unfold into multiple lines
         vim.api.nvim_win_set_cursor(0, { 1, 0 })
-        require('refmt').convert_between_single_and_multiline_bash_command()
+        require('refmt').convert_between_single_and_multiline_argument_lists()
 
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
         tsst.assert_eql_file("tests/files/noname_multiline_output.txt", lines)

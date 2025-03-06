@@ -72,104 +72,8 @@ local function get_child_values_from_line(node, line)
     return words
 end
 
---------------------------------------------------------------------------------
-
--- Convert from a bash command to an exec(...) array
 ---@return string[]
-function M.convert_to_exec_array()
-    local open_bracket, close_bracket
-
-    if vim.tbl_contains(config.curly_bracket_filetypes, vim.o.ft) then
-        open_bracket = '{'
-        close_bracket = '}'
-    else
-        open_bracket = '['
-        close_bracket = ']'
-    end
-
-    if vim.o.ft == '' then
-        -- Parse entire file as bash for '[No Name]' buffers
-        vim.o.ft = 'bash'
-    end
-
-    local words
-    if vim.tbl_contains({'zsh', 'bash', 'sh'}, vim.o.ft) then
-        local node = find_parent({'command'})
-        if node == nil then
-            vim.notify("No command under cursor")
-            return {}
-        end
-        words, _, _ = get_child_values(node)
-    else
-        -- Only parse the current line when the filetype is not shell
-        local line = vim.api.nvim_get_current_line()
-        local parser = vim.treesitter.get_string_parser(line, "bash", nil)
-        local tree = parser:parse({0, 1})[1]
-
-        -- The root node is a "program", we want to pass the first "command"
-        ---@diagnostic disable-next-line: missing-parameter
-        local node = tree:root():child()
-        if node == nil then
-            return {}
-        end
-        words = get_child_values_from_line(node, line)
-    end
-
-    if #words == 0 then
-        return {}
-    end
-
-    -- Qoute every word
-    for i,word in ipairs(words) do
-        if not vim.startswith(word, '"') then
-            words[i] = '"' .. word .. '"'
-        end
-    end
-
-    local lnum = vim.fn.line('.')
-    local indent = string.rep(' ', vim.fn.indent(lnum))
-    local new_line = indent .. open_bracket .. vim.fn.join(words, ', ') .. close_bracket
-
-    vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, {new_line})
-    return {new_line}
-end
-
--- Convert an exec(...) array on the *current line* to a bash command
--- Note: we do not rely on treesitter here, any "array" format will do.
----@return string[]
-function M.convert_to_bash_command()
-    local line = vim.api.nvim_get_current_line()
-    local lnum = vim.fn.line('.')
-
-    if #line < 3 then
-        return {}
-    end
-
-    -- Remove everything before/after the array markers in the first line
-    line = line:gsub("^[^%(%[%{]*[%(%[%{]", '')
-               :gsub("[%)%}%]][^%)%]%}]*$", '')
-    -- ... including the array markers themselves
-    line = line:sub(2, #line - 1)
-
-    local words = vim.split(line, ',')
-    for i,word in pairs(words) do
-        -- Remove quotes around each argument and all extra spacing
-        words[i] = vim.trim(word):gsub("^['\"]", '')
-                                 :gsub("['\"]$", '')
-                                 :gsub('%s+', ' ')
-    end
-
-    local start_row = lnum - 1
-    local end_row = start_row + 1
-    local indent = string.rep(' ', vim.fn.indent(lnum))
-
-    local outline = indent .. vim.fn.join(words, ' ')
-    vim.api.nvim_buf_set_lines(0, start_row, end_row, true, {outline})
-    return {outline}
-end
-
----@return string[]
-function M.convert_between_single_and_multiline_bash_command()
+local function convert_between_single_and_multiline_bash()
     if vim.tbl_contains({'', 'text'}, vim.o.ft) then
         -- Parse entire file as bash for '[No Name]' and plaintext buffers
         vim.o.ft = 'bash'
@@ -240,7 +144,7 @@ end
 
 -- Toggle between a single line argument list and a multiline argument list
 ---@return string[]
-function M.convert_between_single_and_multiline_argument_lists()
+local function convert_between_single_and_multiline()
     local params_parent_list = {
         'parameter_list',
         'parameters',
@@ -354,6 +258,115 @@ function M.convert_between_single_and_multiline_argument_lists()
         new_lines
     )
     return new_lines
+end
+
+--------------------------------------------------------------------------------
+
+-- Convert from a bash command to an exec(...) array
+---@return string[]
+function M.convert_to_exec_array()
+    local open_bracket, close_bracket
+
+    if vim.tbl_contains(config.curly_bracket_filetypes, vim.o.ft) then
+        open_bracket = '{'
+        close_bracket = '}'
+    else
+        open_bracket = '['
+        close_bracket = ']'
+    end
+
+    if vim.o.ft == '' then
+        -- Parse entire file as bash for '[No Name]' buffers
+        vim.o.ft = 'bash'
+    end
+
+    local words
+    if vim.tbl_contains(config.shell_filetypes, vim.o.ft) then
+        local node = find_parent({'command'})
+        if node == nil then
+            vim.notify("No command under cursor")
+            return {}
+        end
+        words, _, _ = get_child_values(node)
+    else
+        -- Only parse the current line when the filetype is not shell
+        local line = vim.api.nvim_get_current_line()
+        local parser = vim.treesitter.get_string_parser(line, "bash", nil)
+        local tree = parser:parse({0, 1})[1]
+
+        -- The root node is a "program", we want to pass the first "command"
+        ---@diagnostic disable-next-line: missing-parameter
+        local node = tree:root():child()
+        if node == nil then
+            return {}
+        end
+        words = get_child_values_from_line(node, line)
+    end
+
+    if #words == 0 then
+        return {}
+    end
+
+    -- Quote every word
+    for i,word in ipairs(words) do
+        if not vim.startswith(word, '"') then
+            words[i] = '"' .. word .. '"'
+        end
+    end
+
+    local lnum = vim.fn.line('.')
+    local indent = string.rep(' ', vim.fn.indent(lnum))
+    local new_line = indent .. open_bracket .. vim.fn.join(words, ', ') .. close_bracket
+
+    vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, {new_line})
+    return {new_line}
+end
+
+-- Convert an exec(...) array on the *current line* to a bash command
+-- Note: we do not rely on treesitter here, any "array" format will do.
+---@return string[]
+function M.convert_to_bash_command()
+    local line = vim.api.nvim_get_current_line()
+    local lnum = vim.fn.line('.')
+
+    if #line < 3 then
+        return {}
+    end
+
+    -- Remove everything before/after the array markers in the first line
+    line = line:gsub("^[^%(%[%{]*[%(%[%{]", '')
+               :gsub("[%)%}%]][^%)%]%}]*$", '')
+    -- ... including the array markers themselves
+    line = line:sub(2, #line - 1)
+
+    local words = vim.split(line, ',')
+    for i,word in pairs(words) do
+        -- Remove quotes around each argument and all extra spacing
+        words[i] = vim.trim(word):gsub("^['\"]", '')
+                                 :gsub("['\"]$", '')
+                                 :gsub('%s+', ' ')
+    end
+
+    local start_row = lnum - 1
+    local end_row = start_row + 1
+    local indent = string.rep(' ', vim.fn.indent(lnum))
+
+    local outline = indent .. vim.fn.join(words, ' ')
+    vim.api.nvim_buf_set_lines(0, start_row, end_row, true, {outline})
+    return {outline}
+end
+
+function M.convert_between_single_and_multiline_argument_lists()
+    if vim.tbl_contains({'', 'text'}, vim.o.ft) then
+        -- Parse entire file as bash for '[No Name]' and plaintext buffers
+        vim.o.ft = 'bash'
+    end
+
+    if vim.tbl_contains(config.shell_filetypes, vim.o.ft) then
+        convert_between_single_and_multiline_bash()
+    else
+        convert_between_single_and_multiline()
+    end
 end
 
 -- Refactor '// ... ' comments into '/** ... */'

@@ -20,6 +20,12 @@ M.default_opts = {
         'zig',
         'lua',
     },
+    -- Shell script filetypes
+    shell_filetypes = {
+        'sh',
+        'bash',
+        'zsh'
+    },
 }
 
 ---@param user_opts RefmtOptions?
@@ -33,8 +39,8 @@ function M.setup(user_opts)
 
     -- stylua: ignore start
     if opts and opts.default_bindings then
-        vim.keymap.set("n", "tf", require('refmt').convert_between_single_and_multiline_bash_command,
-                      {desc = "Convert between a singleline and multiline bash command"})
+        vim.keymap.set("n", "tl", require('refmt').convert_between_single_and_multiline_argument_lists,
+                       {desc = "Toggle between a single line argument list and a multiline argument list"})
 
         vim.keymap.set("n", "ta", require('refmt').convert_to_exec_array,
                       {desc = "Convert from a bash command to an exec(...) array"})
@@ -45,8 +51,6 @@ function M.setup(user_opts)
         vim.keymap.set("n", "tc", require('refmt').convert_comment_slash_to_asterisk,
                        {desc = "Convert '// ... ' comments into '/** ... */'"})
 
-        vim.keymap.set("n", "tl", require('refmt').convert_between_single_and_multiline_argument_lists,
-                       {desc = "Toggle between a single line argument list and a multiline argument list"})
     end
     -- stylua: ignore end
 end
