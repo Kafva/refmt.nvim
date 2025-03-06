@@ -58,11 +58,13 @@ function M.check_refold(inputfile, outputfile, before_pos, after_pos)
     vim.api.nvim_win_set_cursor(0, before_pos)
     require('refmt').convert_between_single_and_multiline_argument_lists()
 
+    -- XXX: `nvim_buf_get_lines()` truncates long lines...
     local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
     tsst.assert_eql_file(outputfile, lines)
 
+    -- Revert and check against original content
     M.check_reverted(
-        outputfile,
+        inputfile,
         initial_lines,
         after_pos,
         require('refmt').convert_between_single_and_multiline_argument_lists

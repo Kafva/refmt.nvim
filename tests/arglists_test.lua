@@ -14,20 +14,11 @@ M.testcases = {}
 table.insert(M.testcases, {
     desc = 'Unfold and refold function parameters in zig',
     fn = function()
-        vim.cmd "edit tests/files/arglists_input.zig"
-        local initial_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-
-        vim.api.nvim_win_set_cursor(0, { 3, 17 })
-        require('refmt').convert_between_single_and_multiline_argument_lists()
-
-        local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        tsst.assert_eql_file("tests/files/arglists_output.zig", lines)
-
-        fixture.check_reverted(
+        fixture.check_refold(
             "tests/files/arglists_input.zig",
-            initial_lines,
-            {4, 12},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            "tests/files/arglists_output.zig",
+            {3, 17},
+            {4, 12}
         )
     end,
 })
@@ -35,20 +26,11 @@ table.insert(M.testcases, {
 table.insert(M.testcases, {
     desc = 'Unfold and refold method parameters in rust',
     fn = function()
-        vim.cmd "edit tests/files/arglists_input.rs"
-        local initial_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-
-        vim.api.nvim_win_set_cursor(0, { 2, 17 })
-        require('refmt').convert_between_single_and_multiline_argument_lists()
-
-        local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        tsst.assert_eql_file("tests/files/arglists_output.rs", lines)
-
-        fixture.check_reverted(
+        fixture.check_refold(
             "tests/files/arglists_input.rs",
-            initial_lines,
-            {3, 12},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            "tests/files/arglists_output.rs",
+            {2, 17},
+            {3, 12}
         )
     end,
 })
@@ -56,20 +38,11 @@ table.insert(M.testcases, {
 table.insert(M.testcases, {
     desc = 'Unfold and refold function call in c',
     fn = function()
-        vim.cmd "edit tests/files/func_call_input.c"
-        local initial_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-
-        vim.api.nvim_win_set_cursor(0, { 4, 25 })
-        require('refmt').convert_between_single_and_multiline_argument_lists()
-
-        local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        tsst.assert_eql_file("tests/files/func_call_output.c", lines)
-
-        fixture.check_reverted(
+        fixture.check_refold(
             "tests/files/func_call_input.c",
-            initial_lines,
-            {6, 10},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            "tests/files/func_call_output.c",
+            {4, 25},
+            {6, 10}
         )
     end,
 })
@@ -83,53 +56,20 @@ table.insert(M.testcases, {
             {5, 66},
             {6, 12}
         )
-
-        -- vim.cmd "edit tests/files/func_call_input.lua"
-        -- local initial_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-
-        -- -- Unfold into multiple lines
-        -- vim.api.nvim_win_set_cursor(0, { 5, 66 })
-        -- require('refmt').convert_between_single_and_multiline_argument_lists()
-
-        -- local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        -- tsst.assert_eql_file("tests/files/func_call_output.lua", lines)
-
-        -- fixture.check_reverted(
-        --     "tests/files/func_call_input.lua",
-        --     initial_lines,
-        --     {6, 12},
-        --     require('refmt').convert_between_single_and_multiline_argument_lists
-        -- )
     end,
 })
 
-table.insert(M.testcases, {
-    desc = 'Unfold and refold function call in python',
-    fn = function()
-        fixture.check_refold(
-            "tests/files/arglists_input.py",
-            "tests/files/arglists_output.py",
-            {1, 39},
-            {2, 7}
-        )
-        -- vim.cmd "edit tests/files/arglists_input.py"
-        -- local initial_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-
-        -- -- Unfold into multiple lines
-        -- vim.api.nvim_win_set_cursor(0, { 1, 39 })
-        -- require('refmt').convert_between_single_and_multiline_argument_lists()
-
-        -- local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        -- tsst.assert_eql_file("tests/files/arglists_output.py", lines)
-
-        -- fixture.check_reverted(
-        --     "tests/files/arglists_input.py",
-        --     initial_lines,
-        --     {2, 7},
-        --     require('refmt').convert_between_single_and_multiline_argument_lists
-        -- )
-    end,
-})
+-- table.insert(M.testcases, {
+--     desc = 'Unfold and refold function call in python',
+--     fn = function()
+--         fixture.check_refold(
+--             "tests/files/arglists_input.py",
+--             "tests/files/arglists_output.py",
+--             {1, 39},
+--             {2, 7}
+--         )
+--     end,
+-- })
 
 table.insert(M.testcases, {
     desc = 'Unfold function call with bad spacing in c',
