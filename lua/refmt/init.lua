@@ -2,6 +2,23 @@ local M = {}
 
 local config = require 'refmt.config'
 
+-- Supported languages (excluding bash)
+local single_to_multiline_languages = {
+    'c',
+    'cpp',
+    'zig',
+    'rust',
+    'javascript',
+    'typescript',
+    'typescriptreact',
+    'kotlin',
+    'java',
+    'swift',
+    'python',
+    'lua',
+    'go'
+}
+
 ---@param node_types string[]
 ---@param root_node? TSNode
 ---@return TSNode?
@@ -144,7 +161,7 @@ local function convert_between_single_and_multiline()
     local params_parent_list = {
         'parameters',
         'parameter_list',               -- C, Rust, Zig
-        'formal_parameters',            -- Typescript 
+        'formal_parameters',            -- Typescript
     }
     local params_child_names = {
         'parameter',
@@ -158,6 +175,9 @@ local function convert_between_single_and_multiline()
         'arguments',
         'argument_list',                -- C, Rust, Zig
     }
+
+    -- TODO check support
+
     local window = vim.api.nvim_get_current_win()
     local start_pos = vim.api.nvim_win_get_cursor(window)
     local is_func_call = false

@@ -10,7 +10,8 @@ M.default_opts = {
     -- onto multiple lines
     trailing_comma_filetypes = {
         'zig',
-        'rust'
+        'rust',
+        'go'
     },
     -- Filetypes to use {...} instead of [...] in when translating commands into
     -- exec(...) arrays
