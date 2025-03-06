@@ -96,4 +96,17 @@ table.insert(M.testcases, {
     end,
 })
 
+table.insert(M.testcases, {
+    desc = 'Unfold function call with bad spacing in c',
+    fn = function()
+        vim.cmd "edit tests/files/func_call_bad_spacing_input.c"
+
+        vim.api.nvim_win_set_cursor(0, { 4, 23 })
+        require('refmt').convert_between_single_and_multiline_argument_lists()
+
+        local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
+        tsst.assert_eql_file("tests/files/func_call_output.c", lines)
+    end,
+})
+
 return M

@@ -23,12 +23,13 @@ table.insert(M.testcases, {
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
         tsst.assert_eql_file("tests/files/exec_array_output.sh", lines)
 
-        -- Revert
-        vim.api.nvim_win_set_cursor(0, { 1, 0 })
-        require('refmt').convert_to_bash_command()
-
-        local reverted_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        tsst.assert_eql_tables(initial_lines, reverted_lines)
+        -- Verify that we can convert back into the original bash command
+        fixture.check_reverted(
+            "tests/files/exec_array_input.sh",
+            initial_lines,
+            {1, 0},
+            require('refmt').convert_to_bash_command
+        )
     end,
 })
 
@@ -55,7 +56,7 @@ table.insert(M.testcases, {
 })
 
 table.insert(M.testcases, {
-    desc = 'Convert between bash commands and exec(...) arrays in a [No name] buffer',
+    desc = 'Convert to exec(...) array in a [No name] buffer',
     fn = function()
         local initial_lines = {
             "/System/Library/Frameworks/CoreServices.framework/Frameworks/Metadata.framework/Versions/A/Support/mdbulkimport -s mdworker-bundle -c MDSImporterBundleFinder -m com.apple.metadata.mdbulkimport"

@@ -25,16 +25,13 @@ table.insert(M.testcases, {
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
         tsst.assert_eql_file("tests/files/bash_multiline_output.sh", lines)
 
-        -- Reopen the file to avoid timing issues
-        vim.cmd "silent write! | bd"
-        vim.cmd "edit tests/files/bash_multiline_input.sh"
-
-        -- Revert
-        vim.api.nvim_win_set_cursor(0, { 1, 0 })
-        require('refmt').convert_between_single_and_multiline_bash_command()
-
-        local reverted_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        tsst.assert_eql_tables(initial_lines, reverted_lines)
+        -- Verify that we can refold into the original content
+        fixture.check_reverted(
+            "tests/files/bash_multiline_input.sh",
+            initial_lines,
+            {1, 0},
+            require('refmt').convert_between_single_and_multiline_bash_command
+        )
     end,
 })
 
