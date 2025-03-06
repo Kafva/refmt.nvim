@@ -50,13 +50,15 @@ end
 ---@param outputfile string
 ---@param before_pos integer[]
 ---@param after_pos integer[]
-function M.check_refold(inputfile, outputfile, before_pos, after_pos)
+---@param fn function
+---@param revert_fn? function
+function M.check_apply_and_revert(inputfile, outputfile, before_pos, after_pos, fn, revert_fn)
     vim.cmd("edit " .. inputfile)
     local initial_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
 
-    -- Unfold into multiple lines
+    -- Apply function
     vim.api.nvim_win_set_cursor(0, before_pos)
-    require('refmt').convert_between_single_and_multiline_argument_lists()
+    fn()
 
     -- XXX: `nvim_buf_get_lines()` truncates long lines...
     local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
@@ -67,7 +69,7 @@ function M.check_refold(inputfile, outputfile, before_pos, after_pos)
         inputfile,
         initial_lines,
         after_pos,
-        require('refmt').convert_between_single_and_multiline_argument_lists
+        revert_fn or fn
     )
 end
 

@@ -14,20 +14,12 @@ M.testcases = {}
 table.insert(M.testcases, {
     desc = 'Convert between bash commands and exec(...) arrays in a shell script',
     fn = function()
-        vim.cmd [[edit tests/files/exec_array_input.sh]]
-        local initial_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-
-        vim.api.nvim_win_set_cursor(0, { 1, 0 })
-        require('refmt').convert_to_exec_array()
-
-        local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        tsst.assert_eql_file("tests/files/exec_array_output.sh", lines)
-
-        -- Verify that we can convert back into the original bash command
-        fixture.check_reverted(
+        fixture.check_apply_and_revert(
             "tests/files/exec_array_input.sh",
-            initial_lines,
+            "tests/files/exec_array_output.sh",
             {1, 0},
+            {1, 0},
+            require('refmt').convert_to_exec_array,
             require('refmt').convert_to_bash_command
         )
     end,
@@ -67,7 +59,7 @@ table.insert(M.testcases, {
         require('refmt').convert_to_exec_array()
 
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        tsst.assert_eql_file("tests/files/noname_exec_array_output.txt", lines)
+        tsst.assert_eql_file("tests/files/exec_array_noname_output.txt", lines)
     end,
 })
 
