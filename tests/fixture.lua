@@ -8,6 +8,7 @@ function M.load_parsers()
     vim.treesitter.language.add('lua', { path = "./tests/parser/lua.so" })
     vim.treesitter.language.add('rust', { path = "./tests/parser/rust.so" })
     vim.treesitter.language.add('zig', { path = "./tests/parser/zig.so" })
+    vim.treesitter.language.add('python', { path = "./tests/parser/python.so" })
     vim.treesitter.language.add('bash', { path = "./tests/parser/bash.so" })
 
     vim.treesitter.language.register("bash", "sh")
@@ -43,6 +44,29 @@ function M.check_reverted(inputfile, initial_lines, pos, revert_fn)
     -- Check reverted output with original lines
     local reverted_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
     tsst.assert_eql_tables(initial_lines, reverted_lines)
+end
+
+---@param inputfile string
+---@param outputfile string
+---@param before_pos integer[]
+---@param after_pos integer[]
+function M.check_refold(inputfile, outputfile, before_pos, after_pos)
+    vim.cmd("edit " .. inputfile)
+    local initial_lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
+
+    -- Unfold into multiple lines
+    vim.api.nvim_win_set_cursor(0, before_pos)
+    require('refmt').convert_between_single_and_multiline_argument_lists()
+
+    local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
+    tsst.assert_eql_file(outputfile, lines)
+
+    M.check_reverted(
+        outputfile,
+        initial_lines,
+        after_pos,
+        require('refmt').convert_between_single_and_multiline_argument_lists
+    )
 end
 
 

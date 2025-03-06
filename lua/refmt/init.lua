@@ -72,7 +72,6 @@ local function get_child_values_from_line(node, line)
     return words
 end
 
----@return string[]
 local function convert_between_single_and_multiline_bash()
     if vim.tbl_contains({'', 'text'}, vim.o.ft) then
         -- Parse entire file as bash for '[No Name]' and plaintext buffers
@@ -86,13 +85,13 @@ local function convert_between_single_and_multiline_bash()
     local node = find_parent({'command'})
     if node == nil then
         vim.notify("No command under cursor")
-        return {}
+        return
     end
 
     local words, start_row, end_row = get_child_values(node)
 
     if #words == 0 then
-        return {}
+        return
     end
 
     local new_lines = {}
@@ -138,12 +137,9 @@ local function convert_between_single_and_multiline_bash()
         new_lines = { indent .. vim.fn.join(words, " ") }
         vim.api.nvim_buf_set_lines(0, start_row, end_row + 1, false, new_lines)
     end
-
-    return new_lines
 end
 
 -- Toggle between a single line argument list and a multiline argument list
----@return string[]
 local function convert_between_single_and_multiline()
     local params_parent_list = {
         'parameter_list',
@@ -151,6 +147,7 @@ local function convert_between_single_and_multiline()
     }
     local params_child_names = {
         'parameter_declaration',
+        'typed_parameter', -- Python
         'parameter',
     }
     local func_call_parent_lists = {
@@ -167,7 +164,7 @@ local function convert_between_single_and_multiline()
         parent = find_parent(func_call_parent_lists)
         if parent == nil then
             vim.notify("No parameter list under cursor")
-            return {}
+            return
         end
         is_func_call = true
     end
@@ -257,13 +254,11 @@ local function convert_between_single_and_multiline()
         end_col_func_name,
         new_lines
     )
-    return new_lines
 end
 
 --------------------------------------------------------------------------------
 
 -- Convert from a bash command to an exec(...) array
----@return string[]
 function M.convert_to_exec_array()
     local open_bracket, close_bracket
 
@@ -285,7 +280,7 @@ function M.convert_to_exec_array()
         local node = find_parent({'command'})
         if node == nil then
             vim.notify("No command under cursor")
-            return {}
+            return
         end
         words, _, _ = get_child_values(node)
     else
@@ -298,13 +293,13 @@ function M.convert_to_exec_array()
         ---@diagnostic disable-next-line: missing-parameter
         local node = tree:root():child()
         if node == nil then
-            return {}
+            return
         end
         words = get_child_values_from_line(node, line)
     end
 
     if #words == 0 then
-        return {}
+        return
     end
 
     -- Quote every word
@@ -319,18 +314,16 @@ function M.convert_to_exec_array()
     local new_line = indent .. open_bracket .. vim.fn.join(words, ', ') .. close_bracket
 
     vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, {new_line})
-    return {new_line}
 end
 
 -- Convert an exec(...) array on the *current line* to a bash command
 -- Note: we do not rely on treesitter here, any "array" format will do.
----@return string[]
 function M.convert_to_bash_command()
     local line = vim.api.nvim_get_current_line()
     local lnum = vim.fn.line('.')
 
     if #line < 3 then
-        return {}
+        return
     end
 
     -- Remove everything before/after the array markers in the first line
@@ -353,24 +346,9 @@ function M.convert_to_bash_command()
 
     local outline = indent .. vim.fn.join(words, ' ')
     vim.api.nvim_buf_set_lines(0, start_row, end_row, true, {outline})
-    return {outline}
-end
-
-function M.convert_between_single_and_multiline_argument_lists()
-    if vim.tbl_contains({'', 'text'}, vim.o.ft) then
-        -- Parse entire file as bash for '[No Name]' and plaintext buffers
-        vim.o.ft = 'bash'
-    end
-
-    if vim.tbl_contains(config.shell_filetypes, vim.o.ft) then
-        convert_between_single_and_multiline_bash()
-    else
-        convert_between_single_and_multiline()
-    end
 end
 
 -- Refactor '// ... ' comments into '/** ... */'
----@return string[]
 function M.convert_comment_slash_to_asterisk()
     local window = vim.api.nvim_get_current_win()
     local start_pos = vim.api.nvim_win_get_cursor(window)
@@ -386,7 +364,7 @@ function M.convert_comment_slash_to_asterisk()
         if node == nil or node:type() ~= 'comment' then
             if first then
                 vim.notify("No comment under cursor")
-                return {}
+                return
             else
                 -- No more comment lines
                 break
@@ -401,7 +379,7 @@ function M.convert_comment_slash_to_asterisk()
 
         if not vim.startswith(vim.trim(line), '//') then
             vim.notify("Comment prefix must be '//' for conversion")
-            return {}
+            return
         end
         local content, _ = vim.trim(line):gsub('///*%s*', '')
 
@@ -426,7 +404,19 @@ function M.convert_comment_slash_to_asterisk()
     end
 
     vim.api.nvim_buf_set_lines(0, start_pos[1] - 1, end_line, true, new_lines)
-    return new_lines
+end
+
+function M.convert_between_single_and_multiline_argument_lists()
+    if vim.tbl_contains({'', 'text'}, vim.o.ft) then
+        -- Parse entire file as bash for '[No Name]' and plaintext buffers
+        vim.o.ft = 'bash'
+    end
+
+    if vim.tbl_contains(config.shell_filetypes, vim.o.ft) then
+        convert_between_single_and_multiline_bash()
+    else
+        convert_between_single_and_multiline()
+    end
 end
 
 ---@param user_opts RefmtOptions?
