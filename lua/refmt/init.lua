@@ -142,17 +142,21 @@ end
 -- Toggle between a single line argument list and a multiline argument list
 local function convert_between_single_and_multiline()
     local params_parent_list = {
-        'parameter_list',
         'parameters',
+        'parameter_list',               -- C, Rust, Zig
+        'formal_parameters',            -- Typescript 
     }
     local params_child_names = {
-        'parameter_declaration',
-        'typed_parameter', -- Python
         'parameter',
+        'parameter_declaration',        -- C, Rust, Zig
+        'required_parameter',           -- Typescript
+        'optional_parameter',           -- Typescript
+        'typed_parameter',              -- Python
+        'identifier',                   -- XXX: Python
     }
     local func_call_parent_lists = {
-        'argument_list',
         'arguments',
+        'argument_list',                -- C, Rust, Zig
     }
     local window = vim.api.nvim_get_current_win()
     local start_pos = vim.api.nvim_win_get_cursor(window)

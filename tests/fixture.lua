@@ -9,6 +9,7 @@ function M.load_parsers()
     vim.treesitter.language.add('rust', { path = "./tests/parser/rust.so" })
     vim.treesitter.language.add('zig', { path = "./tests/parser/zig.so" })
     vim.treesitter.language.add('python', { path = "./tests/parser/python.so" })
+    vim.treesitter.language.add('typescript', { path = "./tests/parser/typescript.so" })
     vim.treesitter.language.add('bash', { path = "./tests/parser/bash.so" })
 
     vim.treesitter.language.register("bash", "sh")
