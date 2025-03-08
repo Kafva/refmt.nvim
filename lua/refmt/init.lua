@@ -141,18 +141,21 @@ end
 local function convert_between_single_and_multiline()
     local params_parent_list = {
         'parameters',
+        'method_declaration',           -- Java
         'parameter_list',               -- C, Rust, Zig
         'formal_parameters',            -- Typescript
         -- TODO
         --'function_declaration',       -- Swift
         -- TODO
         'function_value_parameters',    -- Kotlin
+        'list'                          -- Python lists
     }
     local params_child_names = {
         'parameter',
         'parameter_declaration',        -- C, Rust, Zig
         'required_parameter',           -- Typescript
         'optional_parameter',           -- Typescript
+        'formal_parameter',             -- Java
         'typed_parameter',              -- Python
         -- XXX: Python parameters without type annotations
         'identifier',

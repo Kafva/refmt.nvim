@@ -37,6 +37,19 @@ table.insert(M.testcases, {
     end,
 })
 
+table.insert(M.testcases, {
+    desc = 'Unfold and refold method parameters in java',
+    fn = function()
+        fixture.check_apply_and_revert(
+            "tests/files/arglists_input.java",
+            "tests/files/arglists_output.java",
+            {2, 77},
+            {3, 9},
+            require('refmt').convert_between_single_and_multiline_argument_lists
+        )
+    end,
+})
+
 -- table.insert(M.testcases, {
 --     desc = 'Unfold and refold method parameters in swift',
 --     fn = function()
