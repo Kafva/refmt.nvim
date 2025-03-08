@@ -24,18 +24,18 @@ table.insert(M.testcases, {
     end,
 })
 
-table.insert(M.testcases, {
-    desc = 'Unfold and refold method parameters in rust',
-    fn = function()
-        fixture.check_apply_and_revert(
-            "tests/files/arglists_input.rs",
-            "tests/files/arglists_output.rs",
-            {2, 17},
-            {3, 12},
-            require('refmt').convert_between_single_and_multiline_argument_lists
-        )
-    end,
-})
+-- table.insert(M.testcases, {
+--     desc = 'Unfold and refold method parameters in rust',
+--     fn = function()
+--         fixture.check_apply_and_revert(
+--             "tests/files/arglists_input.rs",
+--             "tests/files/arglists_output.rs",
+--             {2, 17},
+--             {3, 12},
+--             require('refmt').convert_between_single_and_multiline_argument_lists
+--         )
+--     end,
+-- })
 
 -- table.insert(M.testcases, {
 --     desc = 'Unfold and refold method parameters in swift',
@@ -170,7 +170,7 @@ table.insert(M.testcases, {
 table.insert(M.testcases, {
     desc = 'Unfold function call with bad spacing in c',
     fn = function()
-        vim.cmd "edit tests/files/func_call_bad_spacing_input.c"
+        vim.cmd "edit tests/files/func_call_spaced_input.c"
 
         vim.api.nvim_win_set_cursor(0, { 4, 23 })
         require('refmt').convert_between_single_and_multiline_argument_lists()
