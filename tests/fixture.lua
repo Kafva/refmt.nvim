@@ -5,11 +5,14 @@ local tsst = require 'tsst'
 function M.load_parsers()
     -- Load all required parsers
     vim.treesitter.language.add('c', { path = "./tests/parser/c.so" })
+    vim.treesitter.language.add('cpp', { path = "./tests/parser/cpp.so" })
     vim.treesitter.language.add('lua', { path = "./tests/parser/lua.so" })
     vim.treesitter.language.add('rust', { path = "./tests/parser/rust.so" })
     vim.treesitter.language.add('zig', { path = "./tests/parser/zig.so" })
     vim.treesitter.language.add('python', { path = "./tests/parser/python.so" })
     vim.treesitter.language.add('typescript', { path = "./tests/parser/typescript.so" })
+    vim.treesitter.language.add('kotlin', { path = "./tests/parser/kotlin.so" })
+    vim.treesitter.language.add('swift', { path = "./tests/parser/swift.so" })
     vim.treesitter.language.add('bash', { path = "./tests/parser/bash.so" })
 
     vim.treesitter.language.register("bash", "sh")

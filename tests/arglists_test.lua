@@ -37,6 +37,58 @@ table.insert(M.testcases, {
     end,
 })
 
+-- table.insert(M.testcases, {
+--     desc = 'Unfold and refold method parameters in swift',
+--     fn = function()
+--         fixture.check_apply_and_revert(
+--             "tests/files/arglists_input.swift",
+--             "tests/files/arglists_output.swift",
+--             {3, 23},
+--             {3, 11},
+--             require('refmt').convert_between_single_and_multiline_argument_lists
+--         )
+--     end,
+-- })
+
+-- table.insert(M.testcases, {
+--     desc = 'Unfold and refold method parameters in kotlin',
+--     fn = function()
+--         fixture.check_apply_and_revert(
+--             "tests/files/arglists_input.kt",
+--             "tests/files/arglists_output.kt",
+--             {6, 58},
+--             {3, 11},
+--             require('refmt').convert_between_single_and_multiline_argument_lists
+--         )
+--     end,
+-- })
+
+-- table.insert(M.testcases, {
+--     desc = 'Unfold and refold method parameters in c++',
+--     fn = function()
+--         fixture.check_apply_and_revert(
+--             "tests/files/arglists_input.cpp",
+--             "tests/files/arglists_output.cpp",
+--             {2, 21},
+--             {3, 11},
+--             require('refmt').convert_between_single_and_multiline_argument_lists
+--         )
+--     end,
+-- })
+
+table.insert(M.testcases, {
+    desc = 'Unfold and refold method parameters in typescript',
+    fn = function()
+        fixture.check_apply_and_revert(
+            "tests/files/arglists_input.ts",
+            "tests/files/arglists_output.ts",
+            {2, 18},
+            {4, 10},
+            require('refmt').convert_between_single_and_multiline_argument_lists
+        )
+    end,
+})
+
 table.insert(M.testcases, {
     desc = 'Unfold and refold function call in c',
     fn = function()
@@ -45,6 +97,19 @@ table.insert(M.testcases, {
             "tests/files/func_call_output.c",
             {4, 25},
             {6, 10},
+            require('refmt').convert_between_single_and_multiline_argument_lists
+        )
+    end,
+})
+
+table.insert(M.testcases, {
+    desc = 'Unfold and refold function call in typescript',
+    fn = function()
+        fixture.check_apply_and_revert(
+            "tests/files/func_call_input.ts",
+            "tests/files/func_call_output.ts",
+            {1, 14},
+            {3, 15},
             require('refmt').convert_between_single_and_multiline_argument_lists
         )
     end,

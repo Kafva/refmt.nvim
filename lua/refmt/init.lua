@@ -2,23 +2,6 @@ local M = {}
 
 local config = require 'refmt.config'
 
--- Supported languages (excluding bash)
-local single_to_multiline_languages = {
-    'c',
-    'cpp',
-    'zig',
-    'rust',
-    'javascript',
-    'typescript',
-    'typescriptreact',
-    'kotlin',
-    'java',
-    'swift',
-    'python',
-    'lua',
-    'go'
-}
-
 ---@param node_types string[]
 ---@param root_node? TSNode
 ---@return TSNode?
@@ -141,7 +124,6 @@ local function convert_between_single_and_multiline_bash()
         -- Indent last row
         new_lines[#new_lines] = indent .. extra_indent .. new_lines[#new_lines]
 
-        vim.notify("Unfolding line " .. lnum)
         vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, new_lines)
     else
         -- If the command spans more than one row, re-format it to one line
@@ -150,7 +132,6 @@ local function convert_between_single_and_multiline_bash()
             return {}
         end
 
-        vim.notify("Folding line " .. lnum)
         new_lines = { indent .. vim.fn.join(words, " ") }
         vim.api.nvim_buf_set_lines(0, start_row, end_row + 1, false, new_lines)
     end
@@ -162,6 +143,8 @@ local function convert_between_single_and_multiline()
         'parameters',
         'parameter_list',               -- C, Rust, Zig
         'formal_parameters',            -- Typescript
+        --'function_declaration',       -- Swift
+        'function_value_parameters',    -- Kotlin
     }
     local params_child_names = {
         'parameter',
@@ -169,7 +152,8 @@ local function convert_between_single_and_multiline()
         'required_parameter',           -- Typescript
         'optional_parameter',           -- Typescript
         'typed_parameter',              -- Python
-        'identifier',                   -- XXX: Python
+        -- XXX: Python parameters without type annotations
+        'identifier',                   
     }
     local func_call_parent_lists = {
         'arguments',
