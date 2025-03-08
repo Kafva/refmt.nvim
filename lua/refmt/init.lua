@@ -139,18 +139,24 @@ end
 
 -- Toggle between a single line argument list and a multiline argument list
 local function convert_between_single_and_multiline()
-    local params_parent_list = {
+    local func_def_node_types = {
         'parameters',
         'method_declaration',           -- Java
         'parameter_list',               -- C, Rust, Zig
         'formal_parameters',            -- Typescript
         -- TODO
         --'function_declaration',       -- Swift
-        -- TODO
         'function_value_parameters',    -- Kotlin
-        'list'                          -- Python lists
     }
-    local params_child_names = {
+    local list_node_types = {
+        'list',                          -- Python lists
+        'expression_list',               -- Lua list
+    }
+    local func_call_node_types = {
+        'arguments',
+        'argument_list',                -- C, Rust, Zig
+    }
+    local func_def_child_node_types = {
         'parameter',
         'parameter_declaration',        -- C, Rust, Zig
         'required_parameter',           -- Typescript
@@ -163,28 +169,26 @@ local function convert_between_single_and_multiline()
         -- these should be placed on the same line as the next parameter
         'parameter_modifiers'
     }
-    local func_call_parent_lists = {
-        'arguments',
-        'argument_list',                -- C, Rust, Zig
-    }
 
-    local is_func_call = false
-    local is_multiline = false
-
-    local parent = find_parent(params_parent_list)
+    local is_func_def = true
+    local parent = find_parent(func_def_node_types)
     if parent == nil then
-        parent = find_parent(func_call_parent_lists)
+        parent = find_parent(func_call_node_types)
         if parent == nil then
-            vim.notify("No parameter list under cursor")
-            return
+            parent = find_parent(list_node_types)
+            if parent == nil then
+                vim.notify("No valid match under cursor")
+                return
+            end
         end
-        is_func_call = true
+        is_func_def = false
     end
 
     -- Parse out each parameter
     local words = {}
     local start_col_func_name, start_row_func_name, end_col_func_name, end_row_func_name
     local first = true
+    local is_multiline = false
     local combine_with_previous = false
     for child in parent:iter_children() do
         local start_row, start_col, _, end_row, end_col, _ = child:range(true)
@@ -198,10 +202,10 @@ local function convert_between_single_and_multiline()
 
         -- Skip over child nodes that are not relevant
         local should_skip
-        if is_func_call then
-            should_skip = vim.tbl_contains({',', '(', ')'}, child:type())
+        if is_func_def then
+            should_skip = not vim.tbl_contains(func_def_child_node_types, child:type())
         else
-            should_skip = not vim.tbl_contains(params_child_names, child:type())
+            should_skip = vim.tbl_contains({',', '(', ')'}, child:type())
         end
 
         if should_skip then

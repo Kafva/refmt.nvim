@@ -13,6 +13,7 @@ function M.load_parsers()
     vim.treesitter.language.add('typescript', { path = "./tests/parser/typescript.so" })
     vim.treesitter.language.add('kotlin', { path = "./tests/parser/kotlin.so" })
     vim.treesitter.language.add('swift', { path = "./tests/parser/swift.so" })
+    vim.treesitter.language.add('java', { path = "./tests/parser/java.so" })
     vim.treesitter.language.add('bash', { path = "./tests/parser/bash.so" })
 
     vim.treesitter.language.register("bash", "sh")
