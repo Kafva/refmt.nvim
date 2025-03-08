@@ -50,18 +50,18 @@ table.insert(M.testcases, {
 --     end,
 -- })
 
--- table.insert(M.testcases, {
---     desc = 'Unfold and refold method parameters in kotlin',
---     fn = function()
---         fixture.check_apply_and_revert(
---             "tests/files/arglists_input.kt",
---             "tests/files/arglists_output.kt",
---             {6, 58},
---             {3, 11},
---             require('refmt').convert_between_single_and_multiline_argument_lists
---         )
---     end,
--- })
+table.insert(M.testcases, {
+    desc = 'Unfold and refold method parameters in kotlin',
+    fn = function()
+        fixture.check_apply_and_revert(
+            "tests/files/arglists_input.kt",
+            "tests/files/arglists_output.kt",
+            {6, 58},
+            {3, 11},
+            require('refmt').convert_between_single_and_multiline_argument_lists
+        )
+    end,
+})
 
 table.insert(M.testcases, {
     desc = 'Unfold and refold method parameters in c++',
