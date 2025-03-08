@@ -162,8 +162,6 @@ local function convert_between_single_and_multiline()
         'argument_list',                -- C, Rust, Zig
     }
 
-    local window = vim.api.nvim_get_current_win()
-    local start_pos = vim.api.nvim_win_get_cursor(window)
     local is_func_call = false
     local is_multiline = false
 
@@ -176,6 +174,7 @@ local function convert_between_single_and_multiline()
         end
         is_func_call = true
     end
+    local parent_row, _, _, _, _, _ = parent:range(true)
 
     -- Parse out each parameter
     local words = {}
@@ -213,7 +212,7 @@ local function convert_between_single_and_multiline()
             break
         end
 
-        if start_row > start_pos[1] then
+        if start_row > parent_row then
             is_multiline = true
         end
 
@@ -230,8 +229,8 @@ local function convert_between_single_and_multiline()
         new_lines[1] =  '(' .. table.concat(words, ", ") .. ')'
     else
         -- Convert to multiline
-        local indent = string.rep(' ', vim.fn.indent(start_pos[1]))
-        local indent_params = string.rep(' ', vim.fn.indent(start_pos[1]) + vim.o.sw)
+        local indent = string.rep(' ', vim.fn.indent(parent_row))
+        local indent_params = string.rep(' ', vim.fn.indent(parent_row) + vim.o.sw)
 
         new_lines[1] = "(" -- initial newline
         for i, param in ipairs(words) do

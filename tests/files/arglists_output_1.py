@@ -1,6 +1,6 @@
 def functions_match(
     match: DependencyFunction,
-    other: DependencyFunction
+    other
 ) \
  -> bool:
     '''

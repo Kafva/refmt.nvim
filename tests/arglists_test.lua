@@ -154,19 +154,18 @@ table.insert(M.testcases, {
     end,
 })
 
--- TODO
--- table.insert(M.testcases, {
---     desc = 'Unfold and refold function call in python (#1)',
---     fn = function()
---         fixture.check_apply_and_revert(
---             "tests/files/arglists_input_1.py",
---             "tests/files/arglists_output_1.py",
---             {1, 22},
---             {2, 9},
---             require('refmt').convert_between_single_and_multiline_argument_lists
---         )
---     end,
--- })
+table.insert(M.testcases, {
+    desc = 'Unfold and refold function call in python (#1)',
+    fn = function()
+        fixture.check_apply_and_revert(
+            "tests/files/arglists_input_1.py",
+            "tests/files/arglists_output_1.py",
+            {1, 22},
+            {2, 9},
+            require('refmt').convert_between_single_and_multiline_argument_lists
+        )
+    end,
+})
 
 table.insert(M.testcases, {
     desc = 'Unfold function call with bad spacing in c',

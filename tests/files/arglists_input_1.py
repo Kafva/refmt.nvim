@@ -1,4 +1,4 @@
-def functions_match(match: DependencyFunction, other: DependencyFunction) \
+def functions_match(match: DependencyFunction, other) \
  -> bool:
     '''
     Ensure that the arguments and return value of the provided function
