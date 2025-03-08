@@ -57,7 +57,7 @@ table.insert(M.testcases, {
             "tests/files/arglists_input.kt",
             "tests/files/arglists_output.kt",
             {6, 58},
-            {3, 11},
+            {7, 15},
             require('refmt').convert_between_single_and_multiline_argument_lists
         )
     end,

@@ -156,6 +156,9 @@ local function convert_between_single_and_multiline()
         'typed_parameter',              -- Python
         -- XXX: Python parameters without type annotations
         'identifier',
+        -- XXX: Kotlin can have parameters with leading 'parameter_modifiers'
+        -- these should be placed on the same line as the next parameter
+        'parameter_modifiers'
     }
     local func_call_parent_lists = {
         'arguments',
@@ -179,6 +182,7 @@ local function convert_between_single_and_multiline()
     local words = {}
     local start_col_func_name, start_row_func_name, end_col_func_name, end_row_func_name
     local first = true
+    local combine_with_previous = false
     for child in parent:iter_children() do
         local start_row, start_col, _, end_row, end_col, _ = child:range(true)
 
@@ -216,7 +220,17 @@ local function convert_between_single_and_multiline()
         end
 
         local word = vim.trim(lines[1]:sub(start_col, end_col))
+
+        if combine_with_previous then
+            local previous_word = table.remove(words)
+            word = previous_word .. " " .. word
+            combine_with_previous = false
+        end
         table.insert(words, word)
+
+        if child:type() == 'parameter_modifiers' then
+            combine_with_previous = true
+        end
 
         ::continue::
     end
