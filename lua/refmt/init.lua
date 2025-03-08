@@ -143,7 +143,9 @@ local function convert_between_single_and_multiline()
         'parameters',
         'parameter_list',               -- C, Rust, Zig
         'formal_parameters',            -- Typescript
+        -- TODO
         --'function_declaration',       -- Swift
+        -- TODO
         'function_value_parameters',    -- Kotlin
     }
     local params_child_names = {
@@ -153,14 +155,12 @@ local function convert_between_single_and_multiline()
         'optional_parameter',           -- Typescript
         'typed_parameter',              -- Python
         -- XXX: Python parameters without type annotations
-        'identifier',                   
+        'identifier',
     }
     local func_call_parent_lists = {
         'arguments',
         'argument_list',                -- C, Rust, Zig
     }
-
-    -- TODO check support
 
     local window = vim.api.nvim_get_current_win()
     local start_pos = vim.api.nvim_win_get_cursor(window)
@@ -264,47 +264,18 @@ local function convert_between_single_and_multiline()
     )
 end
 
---------------------------------------------------------------------------------
-
 -- Convert from a bash command to an exec(...) array
-function M.convert_to_exec_array()
-    local open_bracket, close_bracket
+local function convert_to_exec_array()
+    local line = vim.api.nvim_get_current_line()
+    local lnum = vim.fn.line('.')
 
-    if vim.tbl_contains(config.curly_bracket_filetypes, vim.o.ft) then
-        open_bracket = '{'
-        close_bracket = '}'
-    else
-        open_bracket = '['
-        close_bracket = ']'
-    end
+    local parser = vim.treesitter.get_string_parser(line, "bash", nil)
+    local tree = parser:parse({0, 1})[1]
+    -- The root node is a "program", we want to pass the first "command"
+    ---@diagnostic disable-next-line: missing-parameter
+    local node = tree:root():child()
 
-    if vim.o.ft == '' then
-        -- Parse entire file as bash for '[No Name]' buffers
-        vim.o.ft = 'bash'
-    end
-
-    local words
-    if vim.tbl_contains(config.shell_filetypes, vim.o.ft) then
-        local node = find_parent({'command'})
-        if node == nil then
-            vim.notify("No command under cursor")
-            return
-        end
-        words, _, _ = get_child_values(node)
-    else
-        -- Only parse the current line when the filetype is not shell
-        local line = vim.api.nvim_get_current_line()
-        local parser = vim.treesitter.get_string_parser(line, "bash", nil)
-        local tree = parser:parse({0, 1})[1]
-
-        -- The root node is a "program", we want to pass the first "command"
-        ---@diagnostic disable-next-line: missing-parameter
-        local node = tree:root():child()
-        if node == nil then
-            return
-        end
-        words = get_child_values_from_line(node, line)
-    end
+    local words = get_child_values_from_line(node, line)
 
     if #words == 0 then
         return
@@ -317,8 +288,16 @@ function M.convert_to_exec_array()
         end
     end
 
-    local lnum = vim.fn.line('.')
     local indent = string.rep(' ', vim.fn.indent(lnum))
+    local open_bracket, close_bracket
+
+    if vim.tbl_contains(config.curly_bracket_filetypes, vim.o.ft) then
+        open_bracket = '{'
+        close_bracket = '}'
+    else
+        open_bracket = '['
+        close_bracket = ']'
+    end
     local new_line = indent .. open_bracket .. vim.fn.join(words, ', ') .. close_bracket
 
     vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, {new_line})
@@ -326,7 +305,7 @@ end
 
 -- Convert an exec(...) array on the *current line* to a bash command
 -- Note: we do not rely on treesitter here, any "array" format will do.
-function M.convert_to_bash_command()
+local function convert_to_bash_command()
     local line = vim.api.nvim_get_current_line()
     local lnum = vim.fn.line('.')
 
@@ -335,10 +314,9 @@ function M.convert_to_bash_command()
     end
 
     -- Remove everything before/after the array markers in the first line
-    line = line:gsub("^[^%(%[%{]*[%(%[%{]", '')
-               :gsub("[%)%}%]][^%)%]%}]*$", '')
-    -- ... including the array markers themselves
-    line = line:sub(2, #line - 1)
+    local start_index, _, _  = line:find("[%[%{]")
+    local end_index, _, _  = line:find("[%]%}]")
+    line = line:sub(start_index + 1, end_index - 1)
 
     local words = vim.split(line, ',')
     for i,word in pairs(words) do
@@ -354,6 +332,21 @@ function M.convert_to_bash_command()
 
     local outline = indent .. vim.fn.join(words, ' ')
     vim.api.nvim_buf_set_lines(0, start_row, end_row, true, {outline})
+end
+
+--------------------------------------------------------------------------------
+
+function M.convert_between_command_and_exec_array()
+    -- Only parse the current line
+    local line = vim.api.nvim_get_current_line()
+
+    -- Convert into a command if the line contains '[' or '{'
+    local start_index, _, _ = line:find('[%[%{]')
+    if start_index ~= nil then
+        convert_to_bash_command()
+    else
+        convert_to_exec_array()
+    end
 end
 
 -- Refactor '// ... ' comments into '/** ... */'

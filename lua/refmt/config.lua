@@ -43,11 +43,8 @@ function M.setup(user_opts)
         vim.keymap.set("n", "tl", require('refmt').convert_between_single_and_multiline_argument_lists,
                        {desc = "Toggle between a single line argument list and a multiline argument list"})
 
-        vim.keymap.set("n", "ta", require('refmt').convert_to_exec_array,
-                      {desc = "Convert from a bash command to an exec(...) array"})
-
-        vim.keymap.set("n", "tu", require('refmt').convert_to_bash_command,
-                      {desc = "Convert from an exec(...) array into a bash command"})
+        vim.keymap.set("n", "ta", require('refmt').convert_between_command_and_exec_array,
+                      {desc = "Convert between a bash command and an exec(...) array"})
 
         vim.keymap.set("n", "tc", require('refmt').convert_comment_slash_to_asterisk,
                        {desc = "Convert '// ... ' comments into '/** ... */'"})
