@@ -24,18 +24,18 @@ table.insert(M.testcases, {
     end,
 })
 
--- table.insert(M.testcases, {
---     desc = 'Unfold and refold method parameters in rust',
---     fn = function()
---         fixture.check_apply_and_revert(
---             "tests/files/arglists_input.rs",
---             "tests/files/arglists_output.rs",
---             {2, 17},
---             {3, 12},
---             require('refmt').convert_between_single_and_multiline_argument_lists
---         )
---     end,
--- })
+table.insert(M.testcases, {
+    desc = 'Unfold and refold method parameters in rust',
+    fn = function()
+        fixture.check_apply_and_revert(
+            "tests/files/arglists_input.rs",
+            "tests/files/arglists_output.rs",
+            {2, 17},
+            {3, 12},
+            require('refmt').convert_between_single_and_multiline_argument_lists
+        )
+    end,
+})
 
 -- table.insert(M.testcases, {
 --     desc = 'Unfold and refold method parameters in swift',
@@ -63,18 +63,18 @@ table.insert(M.testcases, {
 --     end,
 -- })
 
--- table.insert(M.testcases, {
---     desc = 'Unfold and refold method parameters in c++',
---     fn = function()
---         fixture.check_apply_and_revert(
---             "tests/files/arglists_input.cpp",
---             "tests/files/arglists_output.cpp",
---             {2, 21},
---             {3, 11},
---             require('refmt').convert_between_single_and_multiline_argument_lists
---         )
---     end,
--- })
+table.insert(M.testcases, {
+    desc = 'Unfold and refold method parameters in c++',
+    fn = function()
+        fixture.check_apply_and_revert(
+            "tests/files/arglists_input.cpp",
+            "tests/files/arglists_output.cpp",
+            {2, 21},
+            {3, 11},
+            require('refmt').convert_between_single_and_multiline_argument_lists
+        )
+    end,
+})
 
 table.insert(M.testcases, {
     desc = 'Unfold and refold method parameters in typescript',
