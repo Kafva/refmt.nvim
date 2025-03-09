@@ -3,6 +3,6 @@ local function fname()
         "HINT",
         "INFO",
         "WARN",
-        "ERROR"
+        "ERROR",
     }
 end

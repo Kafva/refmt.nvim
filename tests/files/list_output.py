@@ -7,19 +7,17 @@ def generate_keys(hosts: [Host], out: str):
         if os.path.isfile(key):
             continue
 
-        run(
-            [
-                "ssh-keygen",
-                "-t",
-                "rsa",
-                "-b",
-                "2048",
-                "-C",
-                host.name,
-                "-f",
-                key,
-                "-N",
-                "",
-            ]
-        )
+        run([
+            "ssh-keygen",
+            "-t",
+            "rsa",
+            "-b",
+            "2048",
+            "-C",
+            host.name,
+            "-f",
+            key,
+            "-N",
+            "",
+        ])
 

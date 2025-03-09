@@ -15,7 +15,7 @@ M.default_opts = {
     },
     -- Filetypes to insert trailing commas for when expanding lists
     -- onto multiple lines
-    trailing_comma_filetypes = {
+    trailing_comma_lists_filetypes = {
         'lua',
         'python',
     },

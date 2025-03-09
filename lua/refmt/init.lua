@@ -2,6 +2,13 @@ local M = {}
 
 local config = require 'refmt.config'
 
+---@enum ExprType
+ExprType = {
+    FUNC_DEF = 'func_def',
+    FUNC_CALL = 'func_call',
+    LIST = 'list',
+}
+
 ---@return string[]
 local function get_array_brackets()
     if vim.tbl_contains(config.curly_bracket_filetypes, vim.o.ft) then
@@ -9,6 +16,18 @@ local function get_array_brackets()
     else
         return {'[', ']'}
     end
+end
+
+---@param tbl table
+---@param tbl_needles table
+---@return boolean
+local function tbl_contains_any(tbl, tbl_needles)
+    for _, needle in ipairs(tbl_needles) do
+        if vim.tbl_contains(tbl, needle) then
+            return true
+        end
+    end
+    return false
 end
 
 ---@param node_types string[]
@@ -180,25 +199,29 @@ local function convert_between_single_and_multiline()
         'parameter_modifiers'
     }
 
+    local all_parent_node_types = vim.iter(
+        {func_def_node_types, list_node_types, func_def_node_types}
+    ):flatten():totable()
+
+    -- Find the first parent that matches any of the parent types, i.e.
+    -- if there is a list inside of a function call, match the list,
+    -- if there is a function call inside of a list, metch the function call.
+    local parent = find_parent(all_parent_node_types)
+    if parent == nil then
+        vim.notify("No valid match under cursor")
+        return
+    end
+
+    local expr_type = ExprType.FUNC_DEF
     -- Enclosing brackets for function definitions and calls
     local enclosing_brackets = { '(', ')' }
 
-    local is_func_def = true
-    local parent = find_parent(func_def_node_types)
-    if parent == nil then
-        parent = find_parent(func_call_node_types)
-        if parent == nil then
-            parent = find_parent(list_node_types)
-            if parent == nil then
-                vim.notify("No valid match under cursor")
-                return
-            end
-            -- Update the enclosing brackets to use for lists
-            enclosing_brackets = get_array_brackets()
-        end
-        is_func_def = false
+    if tbl_contains_any(all_parent_node_types, list_node_types) then
+        expr_type = ExprType.LIST
+        enclosing_brackets = get_array_brackets()
+    elseif tbl_contains_any(all_parent_node_types, func_call_node_types) then
+        expr_type = ExprType.FUNC_CALL
     end
-
 
     -- Parse out each parameter
     local skipable_nodes = vim.iter({enclosing_brackets, {','}}):flatten():totable()
@@ -220,7 +243,7 @@ local function convert_between_single_and_multiline()
 
         -- Skip over child nodes that are not relevant
         local should_skip
-        if is_func_def then
+        if expr_type == ExprType.FUNC_DEF then
             should_skip = not vim.tbl_contains(func_def_child_node_types, child:type())
         else
             should_skip = vim.tbl_contains(skipable_nodes, child:type())
@@ -283,7 +306,10 @@ local function convert_between_single_and_multiline()
                 value = indent_params .. param
             end
 
-            if i < #words or vim.tbl_contains(config.trailing_comma_filetypes, vim.o.ft) then
+            if i < #words then
+                value = value .. ","
+            elseif (expr_type == ExprType.LIST and vim.tbl_contains(config.trailing_comma_lists_filetypes, vim.o.ft)) or
+                   (expr_type ~= ExprType.LIST and vim.tbl_contains(config.trailing_comma_filetypes, vim.o.ft)) then
                 value = value .. ","
             end
             table.insert(new_lines, value)
