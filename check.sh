@@ -9,7 +9,7 @@ fi
 
 # Clone the test runner
 if [ ! -e "tests/tsst.nvim" ]; then
-    git clone https://github.com/kafva/tsst.nvim.git tests/tsst.nvim
+    git clone --depth 1 https://github.com/kafva/tsst.nvim.git tests/tsst.nvim
 fi
 
 # Use local installation of treesitter parsers in .testenv
