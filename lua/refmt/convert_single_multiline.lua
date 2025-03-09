@@ -207,9 +207,16 @@ function M.convert_between_single_and_multiline()
 
     if is_multiline then
         -- Convert to single line
-        new_lines[1] = enclosing_brackets[1]
-            .. table.concat(words, ', ')
-            .. enclosing_brackets[2]
+        new_lines[1] = ''
+        if not vim.startswith(words[1], enclosing_brackets[1]) then
+            new_lines[1] = enclosing_brackets[1]
+        end
+
+        new_lines[1] = new_lines[1] .. table.concat(words, ', ')
+
+        if not vim.endswith(words[#words], enclosing_brackets[2]) then
+            new_lines[1] = new_lines[1] .. enclosing_brackets[2]
+        end
     else
         -- Convert to multiline
         local indent = string.rep(' ', vim.fn.indent(start_row_expr + 1))
