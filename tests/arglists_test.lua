@@ -104,6 +104,32 @@ table.insert(M.testcases, {
 })
 
 table.insert(M.testcases, {
+    desc = 'Unfold and refold function parameters in python (#0)',
+    fn = function()
+        fixture.check_apply_and_revert(
+            "tests/files/arglists_input.py",
+            "tests/files/arglists_output.py",
+            {1, 39},
+            {2, 7},
+            require('refmt').convert_between_single_and_multiline_argument_lists
+        )
+    end,
+})
+
+table.insert(M.testcases, {
+    desc = 'Unfold and refold function parameters in python (#1)',
+    fn = function()
+        fixture.check_apply_and_revert(
+            "tests/files/arglists_input_1.py",
+            "tests/files/arglists_output_1.py",
+            {1, 22},
+            {2, 9},
+            require('refmt').convert_between_single_and_multiline_argument_lists
+        )
+    end,
+})
+
+table.insert(M.testcases, {
     desc = 'Unfold function parameters with spacing in python',
     fn = function()
         vim.cmd "edit tests/files/arglists_spaced_input.py"
@@ -115,5 +141,6 @@ table.insert(M.testcases, {
         tsst.assert_eql_file("tests/files/arglists_output.py", lines)
     end,
 })
+
 
 return M

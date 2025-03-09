@@ -155,6 +155,7 @@ local function convert_between_single_and_multiline()
     local func_call_node_types = {
         'arguments',
         'argument_list',                -- C, Rust, Zig
+        'value_arguments',              -- Swift
     }
     local func_def_child_node_types = {
         'parameter',

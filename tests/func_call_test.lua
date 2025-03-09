@@ -54,8 +54,8 @@ table.insert(M.testcases, {
     desc = 'Unfold and refold function call in bash',
     fn = function()
         fixture.check_apply_and_revert(
-            "tests/files/arglists_input.sh",
-            "tests/files/arglists_output.sh",
+            "tests/files/func_call_input.sh",
+            "tests/files/func_call_output.sh",
             {1, 0},
             {1, 0},
             require('refmt').convert_between_single_and_multiline_argument_lists
@@ -64,25 +64,12 @@ table.insert(M.testcases, {
 })
 
 table.insert(M.testcases, {
-    desc = 'Unfold and refold function call in python (#0)',
+    desc = 'Unfold and refold function call in swift',
     fn = function()
         fixture.check_apply_and_revert(
-            "tests/files/arglists_input.py",
-            "tests/files/arglists_output.py",
-            {1, 39},
-            {2, 7},
-            require('refmt').convert_between_single_and_multiline_argument_lists
-        )
-    end,
-})
-
-table.insert(M.testcases, {
-    desc = 'Unfold and refold function call in python (#1)',
-    fn = function()
-        fixture.check_apply_and_revert(
-            "tests/files/arglists_input_1.py",
-            "tests/files/arglists_output_1.py",
-            {1, 22},
+            "tests/files/func_call_input.swift",
+            "tests/files/func_call_output.swift",
+            {1, 92},
             {2, 9},
             require('refmt').convert_between_single_and_multiline_argument_lists
         )
