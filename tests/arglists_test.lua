@@ -104,6 +104,19 @@ table.insert(M.testcases, {
 })
 
 table.insert(M.testcases, {
+    desc = 'Unfold and refold function parameters in go',
+    fn = function()
+        fixture.check_apply_and_revert(
+            "tests/files/arglists_input.go",
+            "tests/files/arglists_output.go",
+            {3, 58},
+            {5, 22},
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
+    end,
+})
+
+table.insert(M.testcases, {
     desc = 'Unfold and refold function parameters in python (#0)',
     fn = function()
         fixture.check_apply_and_revert(

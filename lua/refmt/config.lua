@@ -52,7 +52,7 @@ function M.setup(user_opts)
     -- stylua: ignore start
     if opts and opts.default_bindings then
         vim.keymap.set("n", "tl", require('refmt').convert_between_single_and_multiline_parameter_lists,
-                       {desc = "Toggle between a single line argument list and a multiline argument list"})
+                       {desc = "Toggle between a single line and multiline list of parameters"})
 
         vim.keymap.set("n", "ta", require('refmt').convert_between_command_and_exec_array,
                       {desc = "Convert between a bash command and an exec(...) array"})

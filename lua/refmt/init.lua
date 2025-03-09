@@ -15,6 +15,8 @@ function M.convert_between_command_and_exec_array()
     end
 end
 
+-- Toggle between a single line argument list and a multiline list of child
+-- nodes in an expression.
 function M.convert_between_single_and_multiline_parameter_lists()
     if vim.tbl_contains({'', 'text'}, vim.o.ft) then
         -- Parse entire file as bash for '[No Name]' and plaintext buffers

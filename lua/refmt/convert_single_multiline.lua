@@ -9,6 +9,7 @@ local node_types = {
         'method_declaration',           -- Java
         'parameter_list',               -- C, Rust, Zig
         'formal_parameters',            -- Typescript
+        'formal_parameter_list',        -- Dart
         'function_value_parameters',    -- Kotlin
         -- TODO
         --'function_declaration',       -- Swift
@@ -21,6 +22,8 @@ local node_types = {
     [ExprType.LIST] = {
         'list',                          -- Python lists
         'table_constructor',             -- Lua table
+        'array_literal',                 -- Swift arrays
+        'initializer_list',              -- C arrays
     }
 }
 
@@ -89,7 +92,6 @@ function M.convert_between_single_and_multiline_bash()
     end
 end
 
--- Toggle between a single line argument list and a multiline argument list
 function M.convert_between_single_and_multiline()
     local all_parent_node_types = {
         node_types[ExprType.FUNC_DEF],
