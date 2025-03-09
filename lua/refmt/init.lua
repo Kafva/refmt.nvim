@@ -2,6 +2,15 @@ local M = {}
 
 local config = require 'refmt.config'
 
+---@return string[]
+local function get_array_brackets()
+    if vim.tbl_contains(config.curly_bracket_filetypes, vim.o.ft) then
+        return {'{', '}'}
+    else
+        return {'[', ']'}
+    end
+end
+
 ---@param node_types string[]
 ---@param root_node? TSNode
 ---@return TSNode?
@@ -150,7 +159,7 @@ local function convert_between_single_and_multiline()
     }
     local list_node_types = {
         'list',                          -- Python lists
-        'expression_list',               -- Lua list
+        'table_constructor',             -- Lua table
     }
     local func_call_node_types = {
         'arguments',
@@ -171,6 +180,9 @@ local function convert_between_single_and_multiline()
         'parameter_modifiers'
     }
 
+    -- Enclosing brackets for function definitions and calls
+    local enclosing_brackets = { '(', ')' }
+
     local is_func_def = true
     local parent = find_parent(func_def_node_types)
     if parent == nil then
@@ -181,17 +193,22 @@ local function convert_between_single_and_multiline()
                 vim.notify("No valid match under cursor")
                 return
             end
+            -- Update the enclosing brackets to use for lists
+            enclosing_brackets = get_array_brackets()
         end
         is_func_def = false
     end
 
+
     -- Parse out each parameter
+    local skipable_nodes = vim.iter({enclosing_brackets, {','}}):flatten():totable()
     local words = {}
     local start_col_func_name, start_row_func_name, end_col_func_name, end_row_func_name
     local first = true
     local is_multiline = false
     local combine_with_previous = false
     for child in parent:iter_children() do
+        vim.notify(vim.inspect(child:type()))
         local start_row, start_col, _, end_row, end_col, _ = child:range(true)
 
         if first then
@@ -206,12 +223,12 @@ local function convert_between_single_and_multiline()
         if is_func_def then
             should_skip = not vim.tbl_contains(func_def_child_node_types, child:type())
         else
-            should_skip = vim.tbl_contains({',', '(', ')'}, child:type())
+            should_skip = vim.tbl_contains(skipable_nodes, child:type())
         end
 
         if should_skip then
             -- Save the position of the last character to replace
-            if child:type() == ')' then
+            if child:type() == enclosing_brackets[2] then
                 end_row_func_name = end_row
                 end_col_func_name = end_col
             end
@@ -247,13 +264,13 @@ local function convert_between_single_and_multiline()
 
     if is_multiline then
         -- Convert to single line
-        new_lines[1] =  '(' .. table.concat(words, ", ") .. ')'
+        new_lines[1] =  enclosing_brackets[1] .. table.concat(words, ", ") .. enclosing_brackets[2]
     else
         -- Convert to multiline
         local indent = string.rep(' ', vim.fn.indent(start_row_func_name + 1))
         local indent_params = string.rep(' ', vim.fn.indent(start_row_func_name + 1) + vim.o.sw)
 
-        new_lines[1] = "(" -- initial newline
+        new_lines[1] = enclosing_brackets[1] -- initial newline
         for i, param in ipairs(words) do
             local value
             if i == 1 and vim.startswith(param, "(") then
@@ -271,7 +288,7 @@ local function convert_between_single_and_multiline()
             end
             table.insert(new_lines, value)
         end
-        table.insert(new_lines, indent .. ')') -- closing bracket on newline
+        table.insert(new_lines, indent .. enclosing_brackets[2]) -- closing bracket on newline
     end
 
     vim.api.nvim_buf_set_text(
@@ -309,15 +326,7 @@ local function convert_to_exec_array()
     end
 
     local indent = string.rep(' ', vim.fn.indent(lnum))
-    local open_bracket, close_bracket
-
-    if vim.tbl_contains(config.curly_bracket_filetypes, vim.o.ft) then
-        open_bracket = '{'
-        close_bracket = '}'
-    else
-        open_bracket = '['
-        close_bracket = ']'
-    end
+    local open_bracket, close_bracket = get_array_brackets()
     local new_line = indent .. open_bracket .. vim.fn.join(words, ', ') .. close_bracket
 
     vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, {new_line})
