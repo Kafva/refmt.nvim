@@ -5,7 +5,7 @@ function M.foo()
         vim.api.nvim_buf_set_text(
             0,
             start_row_params,
-            "a b c",
+            'a b c',
             end_row_params,
             (glob == (function () return 2 end)()),
             new_lines

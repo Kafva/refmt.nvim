@@ -1,13 +1,13 @@
 local M = {}
 
-local config = require 'refmt.config'
+local config = require('refmt.config')
 
 ---@return string[]
 function M.get_array_brackets()
     if vim.tbl_contains(config.curly_bracket_filetypes, vim.o.ft) then
-        return {'{', '}'}
+        return { '{', '}' }
     else
-        return {'[', ']'}
+        return { '[', ']' }
     end
 end
 
@@ -52,7 +52,8 @@ function M.get_child_values(node)
         end
         children_end_row = end_row
 
-        local lines = vim.api.nvim_buf_get_lines(0, start_row, end_row + 1, false)
+        local lines =
+            vim.api.nvim_buf_get_lines(0, start_row, end_row + 1, false)
         if #lines == 0 then
             break
         end

@@ -36,7 +36,7 @@ M.default_opts = {
     shell_filetypes = {
         'sh',
         'bash',
-        'zsh'
+        'zsh',
     },
 }
 

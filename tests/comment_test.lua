@@ -1,9 +1,9 @@
-require('refmt').setup {}
+require('refmt').setup({})
 
 local M = {}
 
-local tsst = require 'tsst'
-local fixture = require 'tests.fixture'
+local tsst = require('tsst')
+local fixture = require('tests.fixture')
 
 fixture.load_parsers()
 
@@ -14,7 +14,7 @@ M.testcases = {}
 table.insert(M.testcases, {
     desc = 'Convert multiline // comments into /** ... */ comments',
     fn = function()
-        vim.cmd [[edit tests/files/comment_input.c]]
+        vim.cmd([[edit tests/files/comment_input.c]])
 
         -- XXX: The linecount of the file increases by 2 for each
         -- convert_comment_slash_to_asterisk() call on multiple lines
@@ -31,7 +31,7 @@ table.insert(M.testcases, {
         require('refmt').convert_comment_slash_to_asterisk()
 
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        tsst.assert_eql_file("tests/files/comment_output.c", lines)
+        tsst.assert_eql_file('tests/files/comment_output.c', lines)
     end,
 })
 
