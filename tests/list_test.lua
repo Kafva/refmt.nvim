@@ -17,10 +17,11 @@ table.insert(M.testcases, {
         fixture.check_apply_and_revert(
             "tests/files/list_input.lua",
             "tests/files/list_output.lua",
-            {1, 26},
-            {2, 2},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            {2, 34},
+            {3, 11},
+            require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,
 })
 
+return M

@@ -273,8 +273,8 @@ local function convert_between_single_and_multiline()
         new_lines[1] = enclosing_brackets[1] -- initial newline
         for i, param in ipairs(words) do
             local value
-            if i == 1 and vim.startswith(param, "(") then
-                -- Strip leading '(' from first parameter
+            if i == 1 and vim.startswith(param, enclosing_brackets[1]) then
+                -- Strip leading bracket from first parameter
                 value = indent_params .. param:sub(2, #param)
             elseif vim.startswith(param, ",") then
                 -- ',' can be part of the parameter in some cases
@@ -326,8 +326,8 @@ local function convert_to_exec_array()
     end
 
     local indent = string.rep(' ', vim.fn.indent(lnum))
-    local open_bracket, close_bracket = get_array_brackets()
-    local new_line = indent .. open_bracket .. vim.fn.join(words, ', ') .. close_bracket
+    local brackets = get_array_brackets()
+    local new_line = indent .. brackets[1] .. vim.fn.join(words, ', ') .. brackets[2]
 
     vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, {new_line})
 end
@@ -436,7 +436,7 @@ function M.convert_comment_slash_to_asterisk()
     vim.api.nvim_buf_set_lines(0, start_pos[1] - 1, end_line, true, new_lines)
 end
 
-function M.convert_between_single_and_multiline_argument_lists()
+function M.convert_between_single_and_multiline_parameter_lists()
     if vim.tbl_contains({'', 'text'}, vim.o.ft) then
         -- Parse entire file as bash for '[No Name]' and plaintext buffers
         vim.o.ft = 'bash'

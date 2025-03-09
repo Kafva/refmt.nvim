@@ -19,7 +19,7 @@ table.insert(M.testcases, {
             "tests/files/func_call_output.c",
             {4, 25},
             {6, 10},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,
 })
@@ -32,7 +32,7 @@ table.insert(M.testcases, {
             "tests/files/func_call_output.ts",
             {1, 14},
             {3, 15},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,
 })
@@ -45,7 +45,7 @@ table.insert(M.testcases, {
             "tests/files/func_call_output.lua",
             {5, 66},
             {6, 12},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,
 })
@@ -58,7 +58,7 @@ table.insert(M.testcases, {
             "tests/files/func_call_output.sh",
             {1, 0},
             {1, 0},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,
 })
@@ -71,7 +71,7 @@ table.insert(M.testcases, {
             "tests/files/func_call_output.swift",
             {1, 92},
             {2, 9},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,
 })
@@ -82,7 +82,7 @@ table.insert(M.testcases, {
         vim.cmd "edit tests/files/func_call_spaced_input.c"
 
         vim.api.nvim_win_set_cursor(0, { 4, 23 })
-        require('refmt').convert_between_single_and_multiline_argument_lists()
+        require('refmt').convert_between_single_and_multiline_parameter_lists()
 
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
         tsst.assert_eql_file("tests/files/func_call_output.c", lines)
@@ -99,7 +99,7 @@ table.insert(M.testcases, {
 
         -- Unfold into multiple lines
         vim.api.nvim_win_set_cursor(0, { 1, 0 })
-        require('refmt').convert_between_single_and_multiline_argument_lists()
+        require('refmt').convert_between_single_and_multiline_parameter_lists()
 
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
         tsst.assert_eql_file("tests/files/func_call_noname_output.txt", lines)

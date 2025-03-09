@@ -19,7 +19,7 @@ table.insert(M.testcases, {
             "tests/files/arglists_output.zig",
             {3, 17},
             {4, 12},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,
 })
@@ -32,7 +32,7 @@ table.insert(M.testcases, {
             "tests/files/arglists_output.rs",
             {2, 17},
             {3, 12},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,
 })
@@ -45,7 +45,7 @@ table.insert(M.testcases, {
             "tests/files/arglists_output.java",
             {2, 77},
             {3, 9},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,
 })
@@ -72,7 +72,7 @@ table.insert(M.testcases, {
             "tests/files/arglists_output.kt",
             {6, 58},
             {7, 15},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,
 })
@@ -85,7 +85,7 @@ table.insert(M.testcases, {
             "tests/files/arglists_output.cpp",
             {2, 21},
             {3, 11},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,
 })
@@ -98,7 +98,7 @@ table.insert(M.testcases, {
             "tests/files/arglists_output.ts",
             {2, 18},
             {4, 10},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,
 })
@@ -111,7 +111,7 @@ table.insert(M.testcases, {
             "tests/files/arglists_output.py",
             {1, 39},
             {2, 7},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,
 })
@@ -124,7 +124,7 @@ table.insert(M.testcases, {
             "tests/files/arglists_output_1.py",
             {1, 22},
             {2, 9},
-            require('refmt').convert_between_single_and_multiline_argument_lists
+            require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,
 })
@@ -135,7 +135,7 @@ table.insert(M.testcases, {
         vim.cmd "edit tests/files/arglists_spaced_input.py"
 
         vim.api.nvim_win_set_cursor(0, { 1, 43 })
-        require('refmt').convert_between_single_and_multiline_argument_lists()
+        require('refmt').convert_between_single_and_multiline_parameter_lists()
 
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
         tsst.assert_eql_file("tests/files/arglists_output.py", lines)
