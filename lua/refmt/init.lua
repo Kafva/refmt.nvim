@@ -2,13 +2,6 @@ local M = {}
 
 local config = require 'refmt.config'
 
----@enum ExprType
-ExprType = {
-    FUNC_DEF = 'func_def',
-    FUNC_CALL = 'func_call',
-    LIST = 'list',
-}
-
 ---@return string[]
 local function get_array_brackets()
     if vim.tbl_contains(config.curly_bracket_filetypes, vim.o.ft) then
@@ -16,18 +9,6 @@ local function get_array_brackets()
     else
         return {'[', ']'}
     end
-end
-
----@param tbl table
----@param tbl_needles table
----@return boolean
-local function tbl_contains_any(tbl, tbl_needles)
-    for _, needle in ipairs(tbl_needles) do
-        if vim.tbl_contains(tbl, needle) then
-            return true
-        end
-    end
-    return false
 end
 
 ---@param node_types string[]
@@ -167,41 +148,33 @@ end
 
 -- Toggle between a single line argument list and a multiline argument list
 local function convert_between_single_and_multiline()
-    local func_def_node_types = {
-        'parameters',
-        'method_declaration',           -- Java
-        'parameter_list',               -- C, Rust, Zig
-        'formal_parameters',            -- Typescript
-        -- TODO
-        --'function_declaration',       -- Swift
-        'function_value_parameters',    -- Kotlin
-    }
-    local list_node_types = {
-        'list',                          -- Python lists
-        'table_constructor',             -- Lua table
-    }
-    local func_call_node_types = {
-        'arguments',
-        'argument_list',                -- C, Rust, Zig
-        'value_arguments',              -- Swift
-    }
-    local func_def_child_node_types = {
-        'parameter',
-        'parameter_declaration',        -- C, Rust, Zig
-        'required_parameter',           -- Typescript
-        'optional_parameter',           -- Typescript
-        'formal_parameter',             -- Java
-        'typed_parameter',              -- Python
-        -- XXX: Python parameters without type annotations
-        'identifier',
-        -- XXX: Kotlin can have parameters with leading 'parameter_modifiers'
-        -- these should be placed on the same line as the next parameter
-        'parameter_modifiers'
+    local node_types = {
+        [ExprType.FUNC_DEF] = {
+            'parameters',
+            'method_declaration',           -- Java
+            'parameter_list',               -- C, Rust, Zig
+            'formal_parameters',            -- Typescript
+            'function_value_parameters',    -- Kotlin
+            -- TODO
+            --'function_declaration',       -- Swift
+        },
+        [ExprType.FUNC_CALL] = {
+            'arguments',
+            'argument_list',                -- C, Rust, Zig
+            'value_arguments',              -- Swift
+        },
+        [ExprType.LIST] = {
+            'list',                          -- Python lists
+            'table_constructor',             -- Lua table
+        }
     }
 
-    local all_parent_node_types = vim.iter(
-        {func_def_node_types, list_node_types, func_def_node_types}
-    ):flatten():totable()
+    local all_parent_node_types = {
+        node_types[ExprType.FUNC_DEF],
+        node_types[ExprType.FUNC_CALL],
+        node_types[ExprType.LIST]
+    }
+    all_parent_node_types = vim.iter(all_parent_node_types):flatten():totable()
 
     -- Find the first parent that matches any of the parent types, i.e.
     -- if there is a list inside of a function call, match the list,
@@ -212,48 +185,45 @@ local function convert_between_single_and_multiline()
         return
     end
 
-    local expr_type = ExprType.FUNC_DEF
-    -- Enclosing brackets for function definitions and calls
-    local enclosing_brackets = { '(', ')' }
+    local expr_type
+    local enclosing_brackets
 
-    if tbl_contains_any(all_parent_node_types, list_node_types) then
+    if vim.tbl_contains(node_types[ExprType.LIST], parent:type()) then
         expr_type = ExprType.LIST
         enclosing_brackets = get_array_brackets()
-    elseif tbl_contains_any(all_parent_node_types, func_call_node_types) then
+    elseif vim.tbl_contains(node_types[ExprType.FUNC_CALL], parent:type()) then
         expr_type = ExprType.FUNC_CALL
+        enclosing_brackets = { '(', ')' }
+    else
+        expr_type = ExprType.FUNC_DEF
+        enclosing_brackets = { '(', ')' }
     end
 
-    -- Parse out each parameter
+    -- Child nodes to skip over
     local skipable_nodes = vim.iter({enclosing_brackets, {','}}):flatten():totable()
+
+    -- Parse out each parameter
     local words = {}
-    local start_col_func_name, start_row_func_name, end_col_func_name, end_row_func_name
+    local start_col_expr, start_row_expr, end_col_expr, end_row_expr
     local first = true
     local is_multiline = false
     local combine_with_previous = false
     for child in parent:iter_children() do
-        vim.notify(vim.inspect(child:type()))
         local start_row, start_col, _, end_row, end_col, _ = child:range(true)
 
         if first then
             -- Save the position of the first character to replace
-            start_row_func_name = start_row
-            start_col_func_name = start_col
+            start_row_expr = start_row
+            start_col_expr = start_col
             first = false
         end
 
         -- Skip over child nodes that are not relevant
-        local should_skip
-        if expr_type == ExprType.FUNC_DEF then
-            should_skip = not vim.tbl_contains(func_def_child_node_types, child:type())
-        else
-            should_skip = vim.tbl_contains(skipable_nodes, child:type())
-        end
-
-        if should_skip then
+        if vim.tbl_contains(skipable_nodes, child:type()) then
             -- Save the position of the last character to replace
             if child:type() == enclosing_brackets[2] then
-                end_row_func_name = end_row
-                end_col_func_name = end_col
+                end_row_expr = end_row
+                end_col_expr = end_col
             end
             goto continue
         end
@@ -263,7 +233,7 @@ local function convert_between_single_and_multiline()
             break
         end
 
-        if start_row > start_row_func_name then
+        if start_row > start_row_expr then
             is_multiline = true
         end
 
@@ -276,6 +246,8 @@ local function convert_between_single_and_multiline()
         end
         table.insert(words, word)
 
+        -- XXX: Kotlin can have parameters with leading 'parameter_modifiers'
+        -- these should be placed on the same line as the next parameter
         if child:type() == 'parameter_modifiers' then
             combine_with_previous = true
         end
@@ -290,8 +262,8 @@ local function convert_between_single_and_multiline()
         new_lines[1] =  enclosing_brackets[1] .. table.concat(words, ", ") .. enclosing_brackets[2]
     else
         -- Convert to multiline
-        local indent = string.rep(' ', vim.fn.indent(start_row_func_name + 1))
-        local indent_params = string.rep(' ', vim.fn.indent(start_row_func_name + 1) + vim.o.sw)
+        local indent = string.rep(' ', vim.fn.indent(start_row_expr + 1))
+        local indent_params = string.rep(' ', vim.fn.indent(start_row_expr + 1) + vim.o.sw)
 
         new_lines[1] = enclosing_brackets[1] -- initial newline
         for i, param in ipairs(words) do
@@ -306,10 +278,7 @@ local function convert_between_single_and_multiline()
                 value = indent_params .. param
             end
 
-            if i < #words then
-                value = value .. ","
-            elseif (expr_type == ExprType.LIST and vim.tbl_contains(config.trailing_comma_lists_filetypes, vim.o.ft)) or
-                   (expr_type ~= ExprType.LIST and vim.tbl_contains(config.trailing_comma_filetypes, vim.o.ft)) then
+            if i < #words or vim.tbl_contains(config.trailing_comma_filetypes[expr_type], vim.o.ft) then
                 value = value .. ","
             end
             table.insert(new_lines, value)
@@ -317,12 +286,18 @@ local function convert_between_single_and_multiline()
         table.insert(new_lines, indent .. enclosing_brackets[2]) -- closing bracket on newline
     end
 
+    if end_row_expr == nil or end_col_expr == nil then
+        vim.notify("[refmt.nvim] Internal error: trying to replace line with:", vim.log.levels.ERROR)
+        vim.notify(vim.inspect(new_lines))
+        return
+    end
+
     vim.api.nvim_buf_set_text(
         0,
-        start_row_func_name,
-        start_col_func_name,
-        end_row_func_name,
-        end_col_func_name,
+        start_row_expr,
+        start_col_expr,
+        end_row_expr,
+        end_col_expr,
         new_lines
     )
 end

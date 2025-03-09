@@ -1,26 +1,31 @@
 local M = {}
 
+---@enum ExprType
+ExprType = {
+    FUNC_DEF = 'func_def',
+    FUNC_CALL = 'func_call',
+    LIST = 'list',
+}
+
 ---@type RefmtOptions
 M.default_opts = {
+    -- Enable default keybindings?
     default_bindings = true,
-    -- How much to indent arguments to a bash command when expanded into a
-    -- multiline call.
-    bash_command_argument_indent = 4,
-    -- Filetypes to insert trailing commas for when expanding argument lists
+    -- Filetypes to insert trailing commas for when expanding expressions
     -- onto multiple lines
     trailing_comma_filetypes = {
-        'zig',
-        'rust',
-        'go'
+        [ExprType.FUNC_DEF] = {
+            'zig',
+            'rust',
+            'go',
+        },
+        [ExprType.FUNC_CALL] = {},
+        [ExprType.LIST] = {
+            'lua',
+            'python',
+        },
     },
-    -- Filetypes to insert trailing commas for when expanding lists
-    -- onto multiple lines
-    trailing_comma_lists_filetypes = {
-        'lua',
-        'python',
-    },
-    -- Filetypes to use {...} instead of [...] in when translating commands into
-    -- exec(...) arrays
+    -- Filetypes that use {...} instead of [...] for arrays
     curly_bracket_filetypes = {
         'c',
         'cpp',
