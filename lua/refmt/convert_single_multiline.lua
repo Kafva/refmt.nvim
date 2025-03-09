@@ -12,8 +12,7 @@ local node_types = {
         'formal_parameters',            -- Typescript
         'formal_parameter_list',        -- Dart
         'function_value_parameters',    -- Kotlin
-        -- TODO
-        --'function_declaration',       -- Swift
+        'function_declaration',         -- Swift
     },
     [ExprType.FUNC_CALL] = {
         'arguments',
@@ -132,9 +131,10 @@ function M.convert_between_single_and_multiline()
         enclosing_brackets = { '(', ')' }
     end
 
-    -- Child nodes to skip over
-    local skipable_nodes =
-        vim.iter({ enclosing_brackets, { ',' } }):flatten():totable()
+    -- Child nodes to skip over, 'function_body' needs to be skipped for
+    -- 'function_declaration'
+    local skipable_tables = { enclosing_brackets, { ',', 'function_body' } }
+    local skipable_nodes = vim.iter(skipable_tables):flatten():totable()
 
     -- Parse out each parameter
     local words = {}
@@ -146,6 +146,19 @@ function M.convert_between_single_and_multiline()
         local start_row, start_col, _, end_row, end_col, _ = child:range(true)
 
         if first then
+            if parent:type() == 'function_declaration' then
+                -- All literals of the function like 'func' are part of a
+                -- 'function_declaration', skip over all child nodes until we
+                -- reach the first '('
+                if child:type() == enclosing_brackets[1] then
+                    start_row_expr = start_row
+                    start_col_expr = start_col
+                    first = false
+                else
+                    goto continue
+                end
+            end
+
             -- Save the position of the first character to replace
             start_row_expr = start_row
             start_col_expr = start_col

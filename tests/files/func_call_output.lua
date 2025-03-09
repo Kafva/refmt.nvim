@@ -1,4 +1,4 @@
-M = {}
+local M = {}
 
 function M.foo()
     local l = function ()

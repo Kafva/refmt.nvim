@@ -50,19 +50,18 @@ table.insert(M.testcases, {
     end,
 })
 
--- TODO
--- table.insert(M.testcases, {
---     desc = 'Unfold and refold method parameters in swift',
---     fn = function()
---         fixture.check_apply_and_revert(
---             "tests/files/arglists_input.swift",
---             "tests/files/arglists_output.swift",
---             {3, 23},
---             {3, 11},
---             require('refmt').convert_between_single_and_multiline_argument_lists
---         )
---     end,
--- })
+table.insert(M.testcases, {
+    desc = 'Unfold and refold method parameters in swift',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/arglists_input.swift',
+            'tests/files/arglists_output.swift',
+            { 4, 39 },
+            { 6, 24 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
+    end,
+})
 
 table.insert(M.testcases, {
     desc = 'Unfold and refold method parameters in kotlin',
