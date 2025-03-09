@@ -13,6 +13,12 @@ M.default_opts = {
         'rust',
         'go'
     },
+    -- Filetypes to insert trailing commas for when expanding lists
+    -- onto multiple lines
+    trailing_comma_filetypes = {
+        'lua',
+        'python',
+    },
     -- Filetypes to use {...} instead of [...] in when translating commands into
     -- exec(...) arrays
     curly_bracket_filetypes = {
