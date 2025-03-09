@@ -4,6 +4,7 @@ local tsst = require('tsst')
 
 function M.load_parsers()
     -- Load all required parsers
+    -- stylua: ignore start
     vim.treesitter.language.add('c', { path = './tests/parser/c.so' })
     vim.treesitter.language.add('cpp', { path = './tests/parser/cpp.so' })
     vim.treesitter.language.add('lua', { path = './tests/parser/lua.so' })
@@ -11,16 +12,17 @@ function M.load_parsers()
     vim.treesitter.language.add('zig', { path = './tests/parser/zig.so' })
     vim.treesitter.language.add('go', { path = './tests/parser/go.so' })
     vim.treesitter.language.add('python', { path = './tests/parser/python.so' })
-    vim.treesitter.language.add(
-        'typescript',
-        { path = './tests/parser/typescript.so' }
-    )
+    vim.treesitter.language.add('typescript', { path = './tests/parser/typescript.so' })
     vim.treesitter.language.add('kotlin', { path = './tests/parser/kotlin.so' })
-    vim.treesitter.language.add('swift', { path = './tests/parser/swift.so' })
     vim.treesitter.language.add('java', { path = './tests/parser/java.so' })
     vim.treesitter.language.add('bash', { path = './tests/parser/bash.so' })
 
     vim.treesitter.language.register('bash', 'sh')
+
+    if vim.fn.has('mac') == 1 then
+        vim.treesitter.language.add('swift', { path = './tests/parser/swift.so' })
+    end
+    -- stylua: ignore end
 end
 
 function M.before_each()

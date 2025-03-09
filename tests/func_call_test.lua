@@ -66,6 +66,9 @@ table.insert(M.testcases, {
 table.insert(M.testcases, {
     desc = 'Unfold and refold function call in swift',
     fn = function()
+        if vim.fn.has('mac') == 0 then
+            return tsst.skip()
+        end
         fixture.check_apply_and_revert(
             'tests/files/func_call_input.swift',
             'tests/files/func_call_output.swift',

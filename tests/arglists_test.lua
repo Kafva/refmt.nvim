@@ -53,6 +53,9 @@ table.insert(M.testcases, {
 table.insert(M.testcases, {
     desc = 'Unfold and refold method parameters in swift',
     fn = function()
+        if vim.fn.has('mac') == 0 then
+            return tsst.skip()
+        end
         fixture.check_apply_and_revert(
             'tests/files/arglists_input.swift',
             'tests/files/arglists_output.swift',
