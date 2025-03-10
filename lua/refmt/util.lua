@@ -36,21 +36,29 @@ function M.find_parent(node_types, root_node)
 end
 
 -- Return the values of all direct child nodes of `node` and the rows
--- that the children span over.
+-- that the children span over. Exclude nodes within the `filter_out`
+-- array from the result.
 ---@param node TSNode
----@return string[], number, number
-function M.get_child_values(node)
+---@param filter_out string[]
+---@return string[], number, number, number, number
+function M.get_child_values(node, filter_out)
     local words = {}
     local first = true
-    local children_start_row, children_end_row
+    local expr_start_row, expr_start_col, expr_end_row, expr_end_col
 
     for child in node:iter_children() do
         local start_row, start_col, _, end_row, end_col, _ = child:range(true)
         if first then
-            children_start_row = start_row
+            expr_start_row = start_row
+            expr_start_col = start_col
             first = false
         end
-        children_end_row = end_row
+        expr_end_row = end_row
+        expr_end_col = end_col
+
+        if vim.tbl_contains(filter_out, child:type()) then
+            goto continue
+        end
 
         local lines =
             vim.api.nvim_buf_get_lines(0, start_row, end_row + 1, false)
@@ -60,9 +68,10 @@ function M.get_child_values(node)
 
         local word = vim.trim(lines[1]:sub(start_col, end_col))
         table.insert(words, word)
+        ::continue::
     end
 
-    return words, children_start_row, children_end_row
+    return words, expr_start_row, expr_start_col, expr_end_row, expr_end_col
 end
 
 -- Return the values of all direct children of `node`.

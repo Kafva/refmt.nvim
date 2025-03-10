@@ -36,4 +36,17 @@ table.insert(M.testcases, {
     end,
 })
 
+table.insert(M.testcases, {
+    desc = 'Unfold and refold list declaration in bash',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/list_input.sh',
+            'tests/files/list_output.sh',
+            { 2, 25 },
+            { 4, 8 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
+    end,
+})
+
 return M

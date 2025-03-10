@@ -20,13 +20,83 @@ local node_types = {
         'value_arguments',              -- Swift
     },
     [ExprType.LIST] = {
-        'list',                          -- Python lists
-        'table_constructor',             -- Lua table
-        'array_literal',                 -- Swift arrays
-        'initializer_list',              -- C arrays
+        'list',                          -- Python
+        'table_constructor',             -- Lua
+        'array_literal',                 -- Swift
+        'array_expression',              -- Rust
+        'initializer_list',              -- C
     }
 }
+local all_node_types = {
+    node_types[ExprType.FUNC_DEF],
+    node_types[ExprType.FUNC_CALL],
+    node_types[ExprType.LIST],
+}
 -- stylua: ignore end
+
+---@param words string[]
+---@param indent string
+---@return string[]
+local function build_multiline_bash_command(words, indent)
+    local extra_indent = string.rep(' ', vim.o.sw)
+    local new_lines = {}
+
+    for _, word in ipairs(words) do
+        -- A flag is expected to start with '-' or '+'
+        local isflag = word:match('^[-+]') ~= nil
+        local prev_isflag = #new_lines > 0
+            and new_lines[#new_lines]:match('^[-+]') ~= nil
+        local prev_has_arg = #new_lines > 0
+            and new_lines[#new_lines]:match(' ') ~= nil
+
+        if not isflag and prev_isflag and not prev_has_arg then
+            -- Previous word was a flag and current word is not, add as an argument
+            -- unless an argument has already been provided
+            new_lines[#new_lines] = new_lines[#new_lines] .. ' ' .. word
+        else
+            -- Otherwise, finish up the previous row and add the current
+            -- word on a new row
+            if #new_lines == 1 then
+                new_lines[#new_lines] = indent .. new_lines[#new_lines] .. ' \\'
+            elseif #new_lines > 1 then
+                new_lines[#new_lines] = indent
+                    .. extra_indent
+                    .. new_lines[#new_lines]
+                    .. ' \\'
+            end
+            table.insert(new_lines, vim.trim(word))
+        end
+    end
+
+    -- Indent last row
+    new_lines[#new_lines] = indent .. extra_indent .. new_lines[#new_lines]
+    return new_lines
+end
+
+---@param words string[]
+---@param indent string
+---@param start_row integer
+---@return string[]
+local function build_multiline_bash_array(words, indent, start_row)
+    local new_lines = {}
+    local indent_params =
+        string.rep(' ', vim.fn.indent(start_row + 1) + vim.o.sw)
+
+    new_lines[1] = '(' -- initial newline
+    for i, param in ipairs(words) do
+        local value
+        if i == 1 and vim.startswith(param, '(') then
+            -- Strip leading bracket from first parameter
+            value = indent_params .. param:sub(2, #param)
+        else
+            value = indent_params .. param
+        end
+        table.insert(new_lines, value)
+    end
+    table.insert(new_lines, indent .. ')') -- closing bracket on newline
+
+    return new_lines
+end
 
 function M.convert_between_single_and_multiline_bash()
     if vim.tbl_contains({ '', 'text' }, vim.o.ft) then
@@ -36,15 +106,23 @@ function M.convert_between_single_and_multiline_bash()
 
     local lnum = vim.fn.line('.')
     local indent = string.rep(' ', vim.fn.indent(lnum))
-    local extra_indent = string.rep(' ', vim.o.sw)
 
-    local node = util.find_parent({ 'command' })
+    local expr_type
+    local node = util.find_parent({ 'command', 'array' })
     if node == nil then
-        vim.notify('No command under cursor')
+        vim.notify('No valid match under cursor')
+        return
+    elseif node:type() == 'command' then
+        expr_type = ExprType.FUNC_CALL
+    elseif node:type() == 'array' then
+        expr_type = ExprType.LIST
+    else
+        vim.notify('Unexpected node type: ' .. node:type())
         return
     end
 
-    local words, start_row, end_row = util.get_child_values(node)
+    local words, start_row, start_col, end_row, end_col =
+        util.get_child_values(node, { '(', ')' })
 
     if #words == 0 then
         return
@@ -54,64 +132,50 @@ function M.convert_between_single_and_multiline_bash()
     if start_row == end_row then
         -- If the command spans a single line, unfold it with each argument on
         -- a seperate line
-
-        for _, word in ipairs(words) do
-            -- A flag is expected to start with '-' or '+'
-            local isflag = word:match('^[-+]') ~= nil
-            local prev_isflag = #new_lines > 0
-                and new_lines[#new_lines]:match('^[-+]') ~= nil
-            local prev_has_arg = #new_lines > 0
-                and new_lines[#new_lines]:match(' ') ~= nil
-
-            if not isflag and prev_isflag and not prev_has_arg then
-                -- Previous word was a flag and current word is not, add as an argument
-                -- unless an argument has already been provided
-                new_lines[#new_lines] = new_lines[#new_lines] .. ' ' .. word
-            else
-                -- Otherwise, finish up the previous row and add the current
-                -- word on a new row
-                if #new_lines == 1 then
-                    new_lines[#new_lines] = indent
-                        .. new_lines[#new_lines]
-                        .. ' \\'
-                elseif #new_lines > 1 then
-                    new_lines[#new_lines] = indent
-                        .. extra_indent
-                        .. new_lines[#new_lines]
-                        .. ' \\'
-                end
-                table.insert(new_lines, vim.trim(word))
-            end
+        if expr_type == ExprType.FUNC_CALL then
+            new_lines = build_multiline_bash_command(words, indent)
+        elseif expr_type == ExprType.LIST then
+            new_lines = build_multiline_bash_array(words, indent, start_row)
         end
-
-        -- Indent last row
-        new_lines[#new_lines] = indent .. extra_indent .. new_lines[#new_lines]
-
-        vim.api.nvim_buf_set_lines(0, lnum - 1, lnum, true, new_lines)
     else
         -- If the command spans more than one row, re-format it to one line
         if #words <= 2 then
             vim.notify('Nothing to fold')
-            return {}
+            return
         end
 
-        new_lines = { indent .. vim.fn.join(words, ' ') }
-        vim.api.nvim_buf_set_lines(0, start_row, end_row + 1, false, new_lines)
+        if expr_type == ExprType.FUNC_CALL then
+            new_lines = { indent .. vim.fn.join(words, ' ') }
+        elseif expr_type == ExprType.LIST then
+            new_lines = { '(' .. vim.fn.join(words, ' ') .. ')' }
+        end
     end
+
+    if #new_lines == 0 then
+        vim.notify(
+            '[refmt.nvim] Internal error: no replacement lines generated',
+            vim.log.levels.ERROR
+        )
+        return
+    end
+
+    vim.api.nvim_buf_set_text(
+        0,
+        start_row,
+        start_col,
+        end_row,
+        end_col,
+        new_lines
+    )
 end
 
 function M.convert_between_single_and_multiline()
-    local all_parent_node_types = {
-        node_types[ExprType.FUNC_DEF],
-        node_types[ExprType.FUNC_CALL],
-        node_types[ExprType.LIST],
-    }
-    all_parent_node_types = vim.iter(all_parent_node_types):flatten():totable()
+    local all_node_types_flat = vim.iter(all_node_types):flatten():totable()
 
     -- Find the first parent that matches any of the parent types, i.e.
     -- if there is a list inside of a function call, match the list,
     -- if there is a function call inside of a list, metch the function call.
-    local parent = util.find_parent(all_parent_node_types)
+    local parent = util.find_parent(all_node_types_flat)
     if parent == nil then
         vim.notify('No valid match under cursor')
         return
@@ -223,7 +287,8 @@ function M.convert_between_single_and_multiline()
         local indent_params =
             string.rep(' ', vim.fn.indent(start_row_expr + 1) + vim.o.sw)
 
-        new_lines[1] = enclosing_brackets[1] -- initial newline
+        -- Initial newline with bracket
+        new_lines[1] = enclosing_brackets[1]
         for i, param in ipairs(words) do
             local value
             if i == 1 and vim.startswith(param, enclosing_brackets[1]) then
@@ -247,10 +312,16 @@ function M.convert_between_single_and_multiline()
             end
             table.insert(new_lines, value)
         end
-        table.insert(new_lines, indent .. enclosing_brackets[2]) -- closing bracket on newline
+        -- Closing bracket on newline
+        table.insert(new_lines, indent .. enclosing_brackets[2])
     end
 
-    if end_row_expr == nil or end_col_expr == nil then
+    if
+        start_row_expr == nil
+        or start_col_expr == nil
+        or end_row_expr == nil
+        or end_col_expr == nil
+    then
         vim.notify(
             '[refmt.nvim] Internal error: trying to replace line with:',
             vim.log.levels.ERROR
