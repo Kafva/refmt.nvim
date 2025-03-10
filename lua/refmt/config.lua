@@ -23,6 +23,7 @@ M.default_opts = {
         [ExprType.LIST] = {
             'lua',
             'python',
+            'go',
         },
     },
     -- Filetypes that use {...} instead of [...] for arrays
@@ -31,6 +32,7 @@ M.default_opts = {
         'cpp',
         'zig',
         'lua',
+        'go',
     },
     -- Shell script filetypes
     shell_filetypes = {

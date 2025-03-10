@@ -49,4 +49,43 @@ table.insert(M.testcases, {
     end,
 })
 
+table.insert(M.testcases, {
+    desc = 'Unfold and refold list declaration in typescript',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/list_input.ts',
+            'tests/files/list_output.ts',
+            { 2, 48 },
+            { 4, 9 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
+    end,
+})
+
+table.insert(M.testcases, {
+    desc = 'Unfold and refold list declaration in zig',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/list_input.zig',
+            'tests/files/list_output.zig',
+            { 1, 22 },
+            { 2, 4 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
+    end,
+})
+
+table.insert(M.testcases, {
+    desc = 'Unfold and refold list declaration in go',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/list_input.go',
+            'tests/files/list_output.go',
+            { 6, 38 },
+            { 9, 7 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
+    end,
+})
+
 return M

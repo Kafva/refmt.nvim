@@ -20,11 +20,14 @@ local node_types = {
         'value_arguments',              -- Swift
     },
     [ExprType.LIST] = {
+        'array',                         -- Typescript
         'list',                          -- Python
         'table_constructor',             -- Lua
         'array_literal',                 -- Swift
         'array_expression',              -- Rust
-        'initializer_list',              -- C
+        'initializer_list',              -- C, Zig
+        -- This match might be too greedy...
+        'literal_value',                 -- Go
     }
 }
 local all_node_types = {
