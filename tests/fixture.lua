@@ -9,7 +9,6 @@ function M.load_parsers()
     vim.treesitter.language.add('cpp', { path = './tests/parser/cpp.so' })
     vim.treesitter.language.add('lua', { path = './tests/parser/lua.so' })
     vim.treesitter.language.add('rust', { path = './tests/parser/rust.so' })
-    vim.treesitter.language.add('zig', { path = './tests/parser/zig.so' })
     vim.treesitter.language.add('go', { path = './tests/parser/go.so' })
     vim.treesitter.language.add('python', { path = './tests/parser/python.so' })
     vim.treesitter.language.add('typescript', { path = './tests/parser/typescript.so' })
@@ -19,6 +18,9 @@ function M.load_parsers()
 
     vim.treesitter.language.register('bash', 'sh')
 
+    if vim.fn.executable('zig') == 1 then
+        vim.treesitter.language.add('zig', { path = './tests/parser/zig.so' })
+    end
     if vim.fn.has('mac') == 1 then
         vim.treesitter.language.add('swift', { path = './tests/parser/swift.so' })
     end

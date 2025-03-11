@@ -14,6 +14,9 @@ M.testcases = {}
 table.insert(M.testcases, {
     desc = 'Unfold and refold function parameters in zig',
     fn = function()
+        if vim.fn.executable('zig') == 0 then
+            return tsst.skip()
+        end
         fixture.check_apply_and_revert(
             'tests/files/arglists_input.zig',
             'tests/files/arglists_output.zig',
