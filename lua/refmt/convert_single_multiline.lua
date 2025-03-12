@@ -44,7 +44,7 @@ local function build_multiline_bash_command(words, indent)
     local extra_indent = string.rep(' ', vim.o.sw)
     local new_lines = {}
 
-    for _, word in ipairs(words) do
+    for i, word in ipairs(words) do
         -- A flag is expected to start with '-' or '+'
         local isflag = word:match('^[-+]') ~= nil
         local prev_isflag = #new_lines > 0
@@ -66,6 +66,10 @@ local function build_multiline_bash_command(words, indent)
                     .. extra_indent
                     .. new_lines[#new_lines]
                     .. ' \\'
+            end
+            -- For subshells, strip leading bracket
+            if i == 1 and vim.startswith(word, '(') then
+                word = word:sub(2, #word)
             end
             table.insert(new_lines, vim.trim(word))
         end
