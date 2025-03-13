@@ -42,9 +42,10 @@ local all_node_types = {
 ---@return string[]
 local function build_multiline_bash_command(words, indent)
     local extra_indent = string.rep(' ', vim.o.sw)
+    local is_subshell = false
     local new_lines = {}
 
-    for i, word in ipairs(words) do
+    for _, word in ipairs(words) do
         -- A flag is expected to start with '-' or '+'
         local isflag = word:match('^[-+]') ~= nil
         local prev_isflag = #new_lines > 0
@@ -59,17 +60,31 @@ local function build_multiline_bash_command(words, indent)
         else
             -- Otherwise, finish up the previous row and add the current
             -- word on a new row
+
+            if
+                not is_subshell
+                and #new_lines == 0
+                and vim.startswith(word, '(')
+            then
+                -- For subshells, strip leading bracket
+                word = word:sub(2, #word)
+                is_subshell = true
+            end
+
             if #new_lines == 1 then
-                new_lines[#new_lines] = indent .. new_lines[#new_lines] .. ' \\'
+                if is_subshell then
+                    -- No leading indent for subshells
+                    new_lines[#new_lines] = new_lines[#new_lines] .. ' \\'
+                else
+                    new_lines[#new_lines] = indent
+                        .. new_lines[#new_lines]
+                        .. ' \\'
+                end
             elseif #new_lines > 1 then
                 new_lines[#new_lines] = indent
                     .. extra_indent
                     .. new_lines[#new_lines]
                     .. ' \\'
-            end
-            -- For subshells, strip leading bracket
-            if i == 1 and vim.startswith(word, '(') then
-                word = word:sub(2, #word)
             end
             table.insert(new_lines, vim.trim(word))
         end
@@ -152,7 +167,14 @@ function M.convert_between_single_and_multiline_bash()
         end
 
         if expr_type == ExprType.FUNC_CALL then
-            new_lines = { indent .. vim.fn.join(words, ' ') }
+            if vim.startswith(words[1], '(') then
+                -- Strip leading subshell bracket
+                words[1] = words[1]:sub(2)
+                -- Skip indentation
+                new_lines = { vim.fn.join(words, ' ') }
+            else
+                new_lines = { indent .. vim.fn.join(words, ' ') }
+            end
         elseif expr_type == ExprType.LIST then
             new_lines = { '(' .. vim.fn.join(words, ' ') .. ')' }
         end
