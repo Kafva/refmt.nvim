@@ -8,7 +8,7 @@ relevant parsers installed for the plugin to work.
 ```lua
 require 'refmt'.setup{
   -- Disable to configure your own mappings
-  defautl_bindings = true
+  default_bindings = true
 }
 ```
 
