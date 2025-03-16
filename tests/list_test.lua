@@ -66,12 +66,6 @@ table.insert(M.testcases, {
 table.insert(M.testcases, {
     desc = 'Unfold and refold list declaration in zig',
     fn = function()
-        if vim.fn.executable('zig') == 0 then
-            -- `zig fmt` runs automatically and affects the format of the output,
-            -- the tests only pass if zig is installed.
-            -- See neovim/runtime/autoload/zig/fmt.vim
-            return tsst.skip()
-        end
         fixture.check_apply_and_revert(
             'tests/files/list_input.zig',
             'tests/files/list_output.zig',
@@ -88,8 +82,8 @@ table.insert(M.testcases, {
         fixture.check_apply_and_revert(
             'tests/files/list_input.go',
             'tests/files/list_output.go',
-            { 6, 38 },
-            { 9, 7 },
+            { 6, 34 },
+            { 9, 3 },
             require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,

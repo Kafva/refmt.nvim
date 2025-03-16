@@ -93,6 +93,32 @@ table.insert(M.testcases, {
 })
 
 table.insert(M.testcases, {
+    desc = 'Unfold and refold function call in zig',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/func_call_input.zig',
+            'tests/files/func_call_output.zig',
+            { 2, 52 },
+            { 4, 2 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
+    end,
+})
+
+table.insert(M.testcases, {
+    desc = 'Unfold and refold function call in go',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/func_call_input.go',
+            'tests/files/func_call_output.go',
+            { 9, 34 },
+            { 10, 13 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
+    end,
+})
+
+table.insert(M.testcases, {
     desc = 'Fold function with first argument on same line in typescript',
     fn = function()
         vim.cmd('edit tests/files/func_call_input_1.ts')

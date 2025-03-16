@@ -16,8 +16,9 @@ local node_types = {
     },
     [ExprType.FUNC_CALL] = {
         'arguments',
-        'argument_list',                -- C, Rust, Zig
+        'argument_list',                -- C, Rust
         'value_arguments',              -- Swift
+        'call_expression',              -- Zig, TODO breaks golang
     },
     [ExprType.LIST] = {
         'array',                         -- Typescript
@@ -239,10 +240,15 @@ function M.convert_between_single_and_multiline()
         local start_row, start_col, _, end_row, end_col, _ = child:range(true)
 
         if first then
-            if parent:type() == 'function_declaration' then
+            if
+                parent:type() == 'function_declaration'
+                or parent:type() == 'call_expression'
+            then
                 -- All literals of the function like 'func' are part of a
                 -- 'function_declaration', skip over all child nodes until we
-                -- reach the first '('
+                -- reach the first '('.
+                -- The function name is part of 'call_expression' nodes, we skip
+                -- this in a similar way.
                 if child:type() == enclosing_brackets[1] then
                     start_row_expr = start_row
                     start_col_expr = start_col
@@ -296,6 +302,25 @@ function M.convert_between_single_and_multiline()
         ::continue::
     end
 
+    if
+        start_row_expr == nil
+        or start_col_expr == nil
+        or end_row_expr == nil
+        or end_col_expr == nil
+    then
+        vim.notify(
+            string.format(
+                'Failed to determine expression range: { start = (%d, %d), end = (%d, %d) }',
+                start_row_expr or -1,
+                start_col_expr or -1,
+                end_row_expr or -1,
+                end_col_expr or -1
+            ),
+            vim.log.levels.ERROR
+        )
+        return
+    end
+
     local new_lines = {}
 
     if is_multiline then
@@ -343,20 +368,6 @@ function M.convert_between_single_and_multiline()
         end
         -- Closing bracket on newline
         table.insert(new_lines, indent .. enclosing_brackets[2])
-    end
-
-    if
-        start_row_expr == nil
-        or start_col_expr == nil
-        or end_row_expr == nil
-        or end_col_expr == nil
-    then
-        vim.notify(
-            '[refmt.nvim] Internal error: trying to replace line with:',
-            vim.log.levels.ERROR
-        )
-        vim.notify(vim.inspect(new_lines))
-        return
     end
 
     vim.api.nvim_buf_set_text(

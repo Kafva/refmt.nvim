@@ -18,9 +18,10 @@ function M.load_parsers()
 
     vim.treesitter.language.register('bash', 'sh')
 
-    if vim.fn.executable('zig') == 1 then
-        vim.treesitter.language.add('zig', { path = './tests/parser/zig.so' })
-    end
+    -- Disable autoformat on save for zig, this can make the tests hang
+    vim.g.zig_fmt_autosave = 0
+    vim.treesitter.language.add('zig', { path = './tests/parser/zig.so' })
+
     if vim.fn.has('mac') == 1 then
         vim.treesitter.language.add('swift', { path = './tests/parser/swift.so' })
     end
