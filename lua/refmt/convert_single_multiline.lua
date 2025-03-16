@@ -3,46 +3,11 @@ local M = {}
 local config = require('refmt.config')
 local util = require('refmt.util')
 
--- stylua: ignore start
-local node_types = {
-    [ExprType.FUNC_DEF] = {
-        'parameters',
-        'method_declaration',           -- Java
-        'parameter_list',               -- C, Rust, Zig
-        'formal_parameters',            -- Typescript
-        'formal_parameter_list',        -- Dart
-        'function_value_parameters',    -- Kotlin
-        'function_declaration',         -- Swift
-    },
-    [ExprType.FUNC_CALL] = {
-        'arguments',
-        'argument_list',                -- C, Rust
-        'value_arguments',              -- Swift
-        'call_expression',              -- Zig, TODO breaks golang
-    },
-    [ExprType.LIST] = {
-        'array',                         -- Typescript
-        'list',                          -- Python
-        'table_constructor',             -- Lua
-        'array_literal',                 -- Swift
-        'array_expression',              -- Rust
-        'initializer_list',              -- C, Zig
-        -- This match might be too greedy...
-        'literal_value',                 -- Go
-    }
-}
-local all_node_types = {
-    node_types[ExprType.FUNC_DEF],
-    node_types[ExprType.FUNC_CALL],
-    node_types[ExprType.LIST],
-}
--- stylua: ignore end
-
 ---@param words string[]
 ---@param indent string
 ---@return string[]
 local function build_multiline_bash_command(words, indent)
-    local extra_indent = string.rep(' ', vim.o.sw)
+    local extra_indent = util.blankspace_indent()
     local is_subshell = false
     local new_lines = {}
 
@@ -98,12 +63,10 @@ end
 
 ---@param words string[]
 ---@param indent string
----@param start_row integer
 ---@return string[]
-local function build_multiline_bash_array(words, indent, start_row)
+local function build_multiline_bash_array(words, indent)
     local new_lines = {}
-    local indent_params =
-        string.rep(' ', vim.fn.indent(start_row + 1) + vim.o.sw)
+    local indent_params = indent .. util.blankspace_indent()
 
     new_lines[1] = '(' -- initial newline
     for i, param in ipairs(words) do
@@ -128,7 +91,7 @@ function M.convert_between_single_and_multiline_bash()
     end
 
     local lnum = vim.fn.line('.')
-    local indent = string.rep(' ', vim.fn.indent(lnum))
+    local indent = util.blankspace_indent(lnum)
 
     local expr_type
     local node = util.find_parent({ 'command', 'array' })
@@ -158,7 +121,7 @@ function M.convert_between_single_and_multiline_bash()
         if expr_type == ExprType.FUNC_CALL then
             new_lines = build_multiline_bash_command(words, indent)
         elseif expr_type == ExprType.LIST then
-            new_lines = build_multiline_bash_array(words, indent, start_row)
+            new_lines = build_multiline_bash_array(words, indent)
         end
     else
         -- If the command spans more than one row, re-format it to one line
@@ -200,29 +163,32 @@ function M.convert_between_single_and_multiline_bash()
 end
 
 function M.convert_between_single_and_multiline()
-    local all_node_types_flat = vim.iter(all_node_types):flatten():totable()
-
-    -- Find the first parent that matches any of the parent types, i.e.
-    -- if there is a list inside of a function call, match the list,
-    -- if there is a function call inside of a list, metch the function call.
-    local parent = util.find_parent(all_node_types_flat)
-    if parent == nil then
-        vim.notify('No valid match under cursor')
-        return
-    end
-
+    local parent
     local expr_type
     local enclosing_brackets
 
-    if vim.tbl_contains(node_types[ExprType.LIST], parent:type()) then
-        expr_type = ExprType.LIST
-        enclosing_brackets = util.get_array_brackets()
-    elseif vim.tbl_contains(node_types[ExprType.FUNC_CALL], parent:type()) then
-        expr_type = ExprType.FUNC_CALL
-        enclosing_brackets = { '(', ')' }
-    else
-        expr_type = ExprType.FUNC_DEF
-        enclosing_brackets = { '(', ')' }
+    -- The order of the array matters,
+    -- if there is a list inside of a function call, match the list,
+    -- if there is a function call inside of a list, metch the function call.
+    for _, t in ipairs({ ExprType.LIST, ExprType.FUNC_CALL, ExprType.FUNC_DEF }) do
+        local parent_list_types = config.node_types[t][vim.o.ft]
+            or config.node_types[t]['default']
+
+        parent = util.find_parent(parent_list_types)
+        if parent ~= nil then
+            expr_type = t
+            if expr_type == ExprType.LIST then
+                enclosing_brackets = util.get_array_brackets()
+            else
+                enclosing_brackets = { '(', ')' }
+            end
+            break
+        end
+    end
+
+    if parent == nil then
+        vim.notify('No valid match under cursor')
+        return
     end
 
     -- Child nodes to skip over, 'function_body' needs to be skipped for
@@ -337,9 +303,8 @@ function M.convert_between_single_and_multiline()
         end
     else
         -- Convert to multiline
-        local indent = string.rep(' ', vim.fn.indent(start_row_expr + 1))
-        local indent_params =
-            string.rep(' ', vim.fn.indent(start_row_expr + 1) + vim.o.sw)
+        local indent = util.blankspace_indent(start_row_expr + 1)
+        local indent_params = indent .. util.blankspace_indent()
 
         -- Initial newline with bracket
         new_lines[1] = enclosing_brackets[1]

@@ -40,6 +40,47 @@ M.default_opts = {
         'bash',
         'zsh',
     },
+    -- Recognized `TSNode` parent types when converting between single and
+    -- multiline expressions per expression type and language.
+    node_types = {
+        [ExprType.FUNC_DEF] = {
+            default = { 'parameters' },
+            zig = { 'parameters' },
+            rust = { 'parameters' },
+            java = { 'method_declaration', 'formal_parameters' },
+            c = { 'parameter_list' },
+            cpp = { 'parameter_list' },
+            go = { 'parameter_list' },
+            dart = { 'formal_parameter_list' },
+            kotlin = { 'function_value_parameters' },
+            swift = { 'function_declaration' },
+            typescript = { 'formal_parameters' },
+            typescriptreact = { 'formal_parameters' },
+            javascript = { 'formal_parameters' },
+            javascriptreact = { 'formal_parameters' },
+        },
+        [ExprType.FUNC_CALL] = {
+            default = { 'arguments' },
+            c = { 'argument_list' },
+            cpp = { 'argument_list' },
+            go = { 'argument_list' },
+            rust = { 'argument_list' },
+            swift = { 'value_arguments' },
+            zig = { 'call_expression' },
+        },
+        [ExprType.LIST] = {
+            default = { 'array' },
+            typescript = { 'array' },
+            python = { 'list' },
+            lua = { 'table_constructor' },
+            swift = { 'array_literal' },
+            rust = { 'array_expression' },
+            c = { 'initializer_list' },
+            cpp = { 'initializer_list' },
+            zig = { 'initializer_list' },
+            go = { 'literal_value' },
+        },
+    },
 }
 
 ---@param user_opts RefmtOptions?

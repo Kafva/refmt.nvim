@@ -1,6 +1,5 @@
 local M = {}
 
-local config = require('refmt.config')
 local util = require('refmt.util')
 
 -- Convert from a bash command to an exec(...) array
@@ -14,6 +13,10 @@ function M.convert_to_exec_array()
     ---@diagnostic disable-next-line: missing-parameter
     local node = tree:root():child()
 
+    if node == nil then
+        vim.notify('No node under cursor')
+        return
+    end
     local words = util.get_child_values_from_line(node, line)
 
     if #words == 0 then
@@ -27,7 +30,7 @@ function M.convert_to_exec_array()
         end
     end
 
-    local indent = string.rep(' ', vim.fn.indent(lnum))
+    local indent = util.blankspace_indent(lnum)
     local brackets = util.get_array_brackets()
     local new_line = indent
         .. brackets[1]
@@ -63,7 +66,7 @@ function M.convert_to_bash_command()
 
     local start_row = lnum - 1
     local end_row = start_row + 1
-    local indent = string.rep(' ', vim.fn.indent(lnum))
+    local indent = util.blankspace_indent(lnum)
 
     local outline = indent .. vim.fn.join(words, ' ')
     vim.api.nvim_buf_set_lines(0, start_row, end_row, true, { outline })

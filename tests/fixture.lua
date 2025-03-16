@@ -37,8 +37,18 @@ function M.before_each()
     -- Restore files
     vim.system({ 'git', 'checkout', 'tests/files' }):wait()
 
-    -- Some translations are based of a preset shiftwidth
-    vim.o.sw = 4
+    -- Expected indentation for test output
+    vim.o.expandtab = true
+    vim.o.tabstop = 4
+
+    -- Make sure we override runtime changes (*cough* zig)
+    vim.api.nvim_create_autocmd('FileType', {
+        pattern = { '*' },
+        callback = function()
+            vim.o.expandtab = true
+            vim.o.tabstop = 4
+        end,
+    })
 end
 
 ---@param inputfile string

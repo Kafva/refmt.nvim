@@ -2,6 +2,25 @@ local M = {}
 
 local config = require('refmt.config')
 
+-- Return the indent spaces to use for the provided line, if no line is provided,
+-- return the indent string for one `tabstop`.
+---@param lnum number?
+---@return string
+function M.blankspace_indent(lnum)
+    local cnt = 1
+    if lnum ~= nil then
+        cnt = vim.fn.indent(lnum) / vim.o.tabstop
+    end
+
+    local indent
+    if vim.o.expandtab then
+        indent = string.rep(' ', vim.o.tabstop)
+    else
+        indent = '\t'
+    end
+    return string.rep(indent, cnt)
+end
+
 ---@return string[]
 function M.get_array_brackets()
     if vim.tbl_contains(config.curly_bracket_filetypes, vim.o.ft) then

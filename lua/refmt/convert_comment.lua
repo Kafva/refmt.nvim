@@ -1,5 +1,7 @@
 local M = {}
 
+local util = require('refmt.util')
+
 -- Refactor '// ... ' comments into '/** ... */'
 function M.convert_comment_slash_to_asterisk()
     local window = vim.api.nvim_get_current_win()
@@ -28,7 +30,7 @@ function M.convert_comment_slash_to_asterisk()
         ---@type string
         local line =
             vim.api.nvim_buf_get_lines(0, start_row, start_row + 1, false)[1]
-        indent = string.rep(' ', vim.fn.indent(start_row + 1))
+        indent = util.blankspace_indent(start_row + 1)
 
         if not vim.startswith(vim.trim(line), '//') then
             vim.notify("Comment prefix must be '//' for conversion")

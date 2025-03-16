@@ -83,7 +83,7 @@ table.insert(M.testcases, {
             'tests/files/list_input.go',
             'tests/files/list_output.go',
             { 6, 34 },
-            { 9, 3 },
+            { 9, 2 },
             require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,
