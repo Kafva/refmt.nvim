@@ -41,7 +41,7 @@ M.default_opts = {
         'zsh',
     },
     -- Recognized `TSNode` parent types when converting between single and
-    -- multiline expressions per expression type and language.
+    -- multiline expressions per expression type and language (excluding shell).
     node_types = {
         [ExprType.FUNC_DEF] = {
             default = { 'parameters' },
