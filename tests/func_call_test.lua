@@ -38,6 +38,19 @@ table.insert(M.testcases, {
 })
 
 table.insert(M.testcases, {
+    desc = 'Unfold and refold function call in typescript with object argument',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/func_call_input_2.ts',
+            'tests/files/func_call_output_2.ts',
+            { 1, 29 },
+            { 2, 1 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
+    end,
+})
+
+table.insert(M.testcases, {
     desc = 'Unfold and refold function call in lua',
     fn = function()
         fixture.check_apply_and_revert(
@@ -128,6 +141,34 @@ table.insert(M.testcases, {
 
         local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
         tsst.assert_eql_file('tests/files/func_call_output_1.ts', lines)
+    end,
+})
+
+table.insert(M.testcases, {
+    desc = 'Fold function call in typescript with multiline object',
+    fn = function()
+        vim.cmd('edit tests/files/func_call_input_bad_line_break.ts')
+
+        vim.api.nvim_win_set_cursor(0, { 1, 29 })
+        require('refmt').convert_between_single_and_multiline_parameter_lists()
+
+        local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
+        -- XXX: 'input' version is on one-line
+        tsst.assert_eql_file('tests/files/func_call_input_2.ts', lines)
+    end,
+})
+
+table.insert(M.testcases, {
+    desc = 'Fold function call in typescript with multiline object and curly bracket on newline',
+    fn = function()
+        vim.cmd('edit tests/files/func_call_input_bad_line_break_2.ts')
+
+        vim.api.nvim_win_set_cursor(0, { 1, 29 })
+        require('refmt').convert_between_single_and_multiline_parameter_lists()
+
+        local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
+        -- XXX: 'input' version is on one-line
+        tsst.assert_eql_file('tests/files/func_call_input_2.ts', lines)
     end,
 })
 

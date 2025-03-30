@@ -185,6 +185,7 @@ function M.convert_between_single_and_multiline()
             break
         end
     end
+    -- vim.notify("Type: " .. expr_type, vim.log.levels.TRACE)
 
     if parent == nil then
         vim.notify('No valid match under cursor')
@@ -198,10 +199,12 @@ function M.convert_between_single_and_multiline()
 
     -- Parse out each parameter
     local words = {}
-    local start_col_expr, start_row_expr, end_col_expr, end_row_expr
     local first = true
-    local is_multiline = false
     local combine_with_previous = false
+    local start_row_expr, start_col_expr, _, end_row_expr, end_col_expr, _ =
+        parent:range(true)
+    local is_multiline = false
+
     for child in parent:iter_children() do
         local start_row, start_col, _, end_row, end_col, _ = child:range(true)
 
@@ -246,11 +249,38 @@ function M.convert_between_single_and_multiline()
             break
         end
 
-        if start_row > start_row_expr then
-            is_multiline = true
+        -- For a 'function_declaration' the start_row_expr and end_row_expr
+        -- are never equal, i.e. we can't use `start_row_expr < end_row_expr`
+        -- to detect if the statement is single line or multiline in this
+        -- case.
+        if
+            parent:type() == 'function_declaration'
+            or parent:type() == 'call_expression'
+        then
+            if start_row > start_row_expr then
+                is_multiline = true
+            end
+        else
+            is_multiline = start_row_expr < end_row_expr
         end
 
-        local word = vim.trim(lines[1]:sub(start_col, end_col))
+        local word = ''
+        if start_row == end_row then
+            word = vim.trim(lines[1]:sub(start_col, end_col))
+        else
+            -- Flatten the argument onto one line if it spans more than one line
+            local end_i = end_row + 1 - start_row
+            for i = 1, end_i do
+                local start_idx = i == 1 and start_col or 1
+                local end_idx = i == end_i and end_col or #lines[i]
+                local w = vim.trim(lines[i]:sub(start_idx, end_idx))
+                if word == '' then
+                    word = w
+                else
+                    word = word .. ' ' .. w
+                end
+            end
+        end
 
         if combine_with_previous then
             local previous_word = table.remove(words)
@@ -268,29 +298,11 @@ function M.convert_between_single_and_multiline()
         ::continue::
     end
 
-    if
-        start_row_expr == nil
-        or start_col_expr == nil
-        or end_row_expr == nil
-        or end_col_expr == nil
-    then
-        vim.notify(
-            string.format(
-                'Failed to determine expression range: { start = (%d, %d), end = (%d, %d) }',
-                start_row_expr or -1,
-                start_col_expr or -1,
-                end_row_expr or -1,
-                end_col_expr or -1
-            ),
-            vim.log.levels.ERROR
-        )
-        return
-    end
-
     local new_lines = {}
 
     if is_multiline then
         -- Convert to single line
+        -- vim.notify("Converting to single line", vim.log.levels.TRACE)
         new_lines[1] = ''
         if not vim.startswith(words[1], enclosing_brackets[1]) then
             new_lines[1] = enclosing_brackets[1]
@@ -303,6 +315,7 @@ function M.convert_between_single_and_multiline()
         end
     else
         -- Convert to multiline
+        -- vim.notify("Converting to multiline", vim.log.levels.TRACE)
         local indent = util.blankspace_indent(start_row_expr + 1)
         local indent_params = indent .. util.blankspace_indent()
 
