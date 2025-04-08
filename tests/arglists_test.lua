@@ -12,13 +12,26 @@ M.before_each = fixture.before_each
 M.testcases = {}
 
 table.insert(M.testcases, {
-    desc = 'Unfold and refold function parameters in zig',
+    desc = 'Unfold and refold function parameters in zig (#0)',
     fn = function()
         fixture.check_apply_and_revert(
             'tests/files/arglists_input.zig',
             'tests/files/arglists_output.zig',
             { 3, 17 },
             { 4, 12 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
+    end,
+})
+
+table.insert(M.testcases, {
+    desc = 'Unfold and refold function parameters in zig (#1)',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/arglists_input_1.zig',
+            'tests/files/arglists_output_1.zig',
+            { 2, 5 },
+            { 1, 17 },
             require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,

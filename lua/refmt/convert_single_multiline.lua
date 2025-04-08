@@ -26,7 +26,6 @@ local function build_multiline_bash_command(words, indent)
         else
             -- Otherwise, finish up the previous row and add the current
             -- word on a new row
-
             if
                 not is_subshell
                 and #new_lines == 0
@@ -206,6 +205,7 @@ function M.convert_between_single_and_multiline()
     local is_multiline = false
 
     for child in parent:iter_children() do
+        -- vim.notify("Child type: " .. child:type(), vim.log.levels.TRACE)
         local start_row, start_col, _, end_row, end_col, _ = child:range(true)
 
         if first then
@@ -310,9 +310,8 @@ function M.convert_between_single_and_multiline()
 
         new_lines[1] = new_lines[1] .. table.concat(words, ', ')
 
-        if not vim.endswith(words[#words], enclosing_brackets[2]) then
-            new_lines[1] = new_lines[1] .. enclosing_brackets[2]
-        end
+        -- Always add enclosing bracket
+        new_lines[1] = new_lines[1] .. enclosing_brackets[2]
     else
         -- Convert to multiline
         -- vim.notify("Converting to multiline", vim.log.levels.TRACE)
