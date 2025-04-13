@@ -7,56 +7,43 @@ local util = require('refmt.util')
 ---@param indent string
 ---@return string[]
 local function build_multiline_bash_command(words, indent)
-    local extra_indent = util.blankspace_indent()
-    local is_subshell = false
+    local tab = util.blankspace_indent()
     local new_lines = {}
 
     for _, word in ipairs(words) do
+        local latest_line = new_lines[#new_lines]
         -- A flag is expected to start with '-' or '+'
         local isflag = word:match('^[-+]') ~= nil
-        local prev_isflag = #new_lines > 0
-            and new_lines[#new_lines]:match('^[-+]') ~= nil
-        local prev_has_arg = #new_lines > 0
-            and new_lines[#new_lines]:match(' ') ~= nil
+        local prev_isflag = latest_line and latest_line:match('^[-+]') ~= nil
+        local prev_has_arg = latest_line and latest_line:match(' ') ~= nil
 
         if not isflag and prev_isflag and not prev_has_arg then
             -- Previous word was a flag and current word is not, add as an argument
             -- unless an argument has already been provided
-            new_lines[#new_lines] = new_lines[#new_lines] .. ' ' .. word
+            new_lines[#new_lines] = latest_line .. ' ' .. word
         else
             -- Otherwise, finish up the previous row and add the current
             -- word on a new row
-            if
-                not is_subshell
-                and #new_lines == 0
-                and vim.startswith(word, '(')
-            then
-                -- For subshells, strip leading bracket
-                word = word:sub(2, #word)
-                is_subshell = true
-            end
-
-            if #new_lines == 1 then
-                if is_subshell then
-                    -- No leading indent for subshells
-                    new_lines[#new_lines] = new_lines[#new_lines] .. ' \\'
-                else
-                    new_lines[#new_lines] = indent
-                        .. new_lines[#new_lines]
-                        .. ' \\'
+            if #new_lines == 0 then
+                if vim.startswith(word, '(') then
+                    -- For subshells, strip leading bracket
+                    word = word:sub(2, #word)
                 end
-            elseif #new_lines > 1 then
-                new_lines[#new_lines] = indent
-                    .. extra_indent
-                    .. new_lines[#new_lines]
-                    .. ' \\'
+            elseif #new_lines == 1 then
+                -- First line *never* needs the `indent`, since we call
+                -- nvim_buf_set_text() with a `start_col` we already have the
+                -- correct indentation.
+                new_lines[#new_lines] = latest_line .. ' \\'
+            else
+                new_lines[#new_lines] = indent .. tab .. latest_line .. ' \\'
             end
-            table.insert(new_lines, vim.trim(word))
+            -- Indentation is set on next pass
+            table.insert(new_lines, word)
         end
     end
 
     -- Indent last row
-    new_lines[#new_lines] = indent .. extra_indent .. new_lines[#new_lines]
+    new_lines[#new_lines] = indent .. tab .. new_lines[#new_lines]
     return new_lines
 end
 
@@ -133,11 +120,10 @@ function M.convert_between_single_and_multiline_bash()
             if vim.startswith(words[1], '(') then
                 -- Strip leading subshell bracket
                 words[1] = words[1]:sub(2)
-                -- Skip indentation
-                new_lines = { vim.fn.join(words, ' ') }
-            else
-                new_lines = { indent .. vim.fn.join(words, ' ') }
             end
+            -- The `start_col` setting will give us the correct indent
+            -- automatically here.
+            new_lines = { vim.fn.join(words, ' ') }
         elseif expr_type == ExprType.LIST then
             new_lines = { '(' .. vim.fn.join(words, ' ') .. ')' }
         end

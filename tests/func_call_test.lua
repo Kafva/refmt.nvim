@@ -90,6 +90,19 @@ table.insert(M.testcases, {
 })
 
 table.insert(M.testcases, {
+    desc = 'Unfold and refold function call with indent in bash',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/func_call_input_2.sh',
+            'tests/files/func_call_output_2.sh',
+            { 2, 6 },
+            { 2, 6 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
+    end,
+})
+
+table.insert(M.testcases, {
     desc = 'Unfold and refold function call in swift',
     fn = function()
         if vim.fn.has('mac') == 0 then
