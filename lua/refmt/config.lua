@@ -21,6 +21,7 @@ M.default_opts = {
         },
         [ExprType.FUNC_CALL] = {},
         [ExprType.LIST] = {
+            'zig',
             'lua',
             'python',
             'go',
