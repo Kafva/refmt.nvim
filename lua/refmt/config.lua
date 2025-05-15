@@ -66,6 +66,7 @@ M.default_opts = {
             cpp = { 'argument_list' },
             go = { 'argument_list' },
             rust = { 'argument_list' },
+            python = { 'argument_list' },
             swift = { 'value_arguments' },
             zig = { 'call_expression' },
         },

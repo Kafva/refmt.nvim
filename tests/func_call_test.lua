@@ -38,6 +38,19 @@ table.insert(M.testcases, {
 })
 
 table.insert(M.testcases, {
+    desc = 'Unfold and refold function call in python',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/func_call_input.py',
+            'tests/files/func_call_output.py',
+            { 2, 47 },
+            { 2, 47 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
+    end,
+})
+
+table.insert(M.testcases, {
     desc = 'Unfold and refold function call in typescript with object argument',
     fn = function()
         fixture.check_apply_and_revert(
