@@ -27,7 +27,7 @@ table.insert(M.testcases, {
 table.insert(M.testcases, {
     desc = 'Convert between bash commands and exec(...) arrays in a python script',
     fn = function()
-        vim.cmd([[edit tests/files/exec_array_input.py]])
+        fixture.open('tests/files/exec_array_input.py')
 
         -- Convert first line to bash statement
         vim.api.nvim_win_set_cursor(0, { 1, 0 })

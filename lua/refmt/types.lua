@@ -1,5 +1,6 @@
 ---@class RefmtOptions
 ---@field default_bindings? boolean
+---@field trace? boolean
 ---@field trailing_comma_filetypes? table<ExprType, string[]>
 ---@field curly_bracket_filetypes? string[]
 ---@field shell_filetypes? string[]

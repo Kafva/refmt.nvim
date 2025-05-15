@@ -160,7 +160,7 @@ table.insert(M.testcases, {
 table.insert(M.testcases, {
     desc = 'Fold function with first argument on same line in typescript',
     fn = function()
-        vim.cmd('edit tests/files/func_call_input_1.ts')
+        fixture.open('tests/files/func_call_input_1.ts')
 
         vim.api.nvim_win_set_cursor(0, { 1, 19 })
         require('refmt').convert_between_single_and_multiline_parameter_lists()
@@ -173,7 +173,7 @@ table.insert(M.testcases, {
 table.insert(M.testcases, {
     desc = 'Fold function call in typescript with multiline object',
     fn = function()
-        vim.cmd('edit tests/files/func_call_input_bad_line_break.ts')
+        fixture.open('tests/files/func_call_input_bad_line_break.ts')
 
         vim.api.nvim_win_set_cursor(0, { 1, 29 })
         require('refmt').convert_between_single_and_multiline_parameter_lists()
@@ -187,7 +187,7 @@ table.insert(M.testcases, {
 table.insert(M.testcases, {
     desc = 'Fold function call in typescript with multiline object and curly bracket on newline',
     fn = function()
-        vim.cmd('edit tests/files/func_call_input_bad_line_break_2.ts')
+        fixture.open('tests/files/func_call_input_bad_line_break_2.ts')
 
         vim.api.nvim_win_set_cursor(0, { 1, 29 })
         require('refmt').convert_between_single_and_multiline_parameter_lists()
@@ -201,7 +201,7 @@ table.insert(M.testcases, {
 table.insert(M.testcases, {
     desc = 'Unfold function call with bad spacing in c',
     fn = function()
-        vim.cmd('edit tests/files/func_call_spaced_input.c')
+        fixture.open('tests/files/func_call_spaced_input.c')
 
         vim.api.nvim_win_set_cursor(0, { 4, 23 })
         require('refmt').convert_between_single_and_multiline_parameter_lists()

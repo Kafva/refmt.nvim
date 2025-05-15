@@ -49,6 +49,12 @@ function M.before_each()
             vim.o.tabstop = 4
         end,
     })
+
+    -- Setup with trace logging
+    require('refmt').setup({
+        default_bindings = false,
+        trace = true,
+    })
 end
 
 ---@param inputfile string
@@ -59,7 +65,7 @@ function M.check_reverted(inputfile, initial_lines, pos, revert_fn)
     -- Reopen the inputfile to avoid timing issues
     vim.cmd('silent write')
     vim.cmd('bd')
-    vim.cmd('edit ' .. inputfile)
+    M.open(inputfile)
 
     -- Revert with the provided function
     vim.api.nvim_win_set_cursor(0, pos)
@@ -85,7 +91,7 @@ function M.check_apply_and_revert(
     fn,
     revert_fn
 )
-    vim.cmd('edit ' .. inputfile)
+    require('tests.fixture').open(inputfile)
     local initial_lines =
         vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
 
@@ -99,6 +105,15 @@ function M.check_apply_and_revert(
 
     -- Revert and check against original content
     M.check_reverted(inputfile, initial_lines, after_pos, revert_fn or fn)
+end
+
+--- Open a file and explicitly trigger treesitter parsing, this
+--- is required when running non-interactively to get results from `.get_node()`
+--- since 0.11.0.
+---@param inputfile string
+function M.open(inputfile)
+    vim.cmd('edit ' .. inputfile)
+    vim.treesitter.get_parser(0):parse(true)
 end
 
 return M

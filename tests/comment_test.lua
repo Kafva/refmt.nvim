@@ -14,7 +14,7 @@ M.testcases = {}
 table.insert(M.testcases, {
     desc = 'Convert multiline // comments into /** ... */ comments',
     fn = function()
-        vim.cmd([[edit tests/files/comment_input.c]])
+        fixture.open('tests/files/comment_input.c')
 
         -- XXX: The linecount of the file increases by 2 for each
         -- convert_comment_slash_to_asterisk() call on multiple lines

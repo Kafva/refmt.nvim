@@ -160,7 +160,7 @@ table.insert(M.testcases, {
 table.insert(M.testcases, {
     desc = 'Unfold function parameters with spacing in python',
     fn = function()
-        vim.cmd('edit tests/files/arglists_spaced_input.py')
+        fixture.open('tests/files/arglists_spaced_input.py')
 
         vim.api.nvim_win_set_cursor(0, { 1, 43 })
         require('refmt').convert_between_single_and_multiline_parameter_lists()

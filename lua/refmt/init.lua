@@ -21,6 +21,10 @@ function M.convert_between_single_and_multiline_parameter_lists()
     if vim.tbl_contains({ '', 'text' }, vim.o.ft) then
         -- Parse entire file as bash for '[No Name]' and plaintext buffers
         vim.o.ft = 'bash'
+        -- The highlighting for bash will automatically trigger treesitter
+        -- parsing but it will likely be too late, manually tigger parsing
+        -- to make sure we have nodes at the next stage.
+        vim.treesitter.get_parser(0):parse(true)
     end
 
     if vim.tbl_contains(config.shell_filetypes, vim.o.ft) then

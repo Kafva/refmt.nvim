@@ -151,6 +151,7 @@ function M.convert_between_single_and_multiline()
     local parent
     local expr_type
     local enclosing_brackets
+    local curpos = vim.api.nvim_win_get_cursor(0)
 
     -- The order of the array matters,
     -- if there is a list inside of a function call, match the list,
@@ -159,6 +160,13 @@ function M.convert_between_single_and_multiline()
         local parent_list_types = config.node_types[t][vim.o.ft]
             or config.node_types[t]['default']
 
+        util.trace(
+            string.format(
+                'Searching for parents under cursor %s: %s',
+                vim.inspect(curpos),
+                vim.inspect(parent_list_types)
+            )
+        )
         parent = util.find_parent(parent_list_types)
         if parent ~= nil then
             expr_type = t
@@ -170,7 +178,7 @@ function M.convert_between_single_and_multiline()
             break
         end
     end
-    -- vim.notify("Type: " .. expr_type, vim.log.levels.TRACE)
+    util.trace('Type: ' .. tostring(expr_type))
 
     if parent == nil then
         vim.notify('No valid match under cursor')
@@ -191,7 +199,7 @@ function M.convert_between_single_and_multiline()
     local is_multiline = false
 
     for child in parent:iter_children() do
-        -- vim.notify("Child type: " .. child:type(), vim.log.levels.TRACE)
+        util.trace('Child type: ' .. child:type())
         local start_row, start_col, _, end_row, end_col, _ = child:range(true)
 
         if first then
@@ -288,7 +296,7 @@ function M.convert_between_single_and_multiline()
 
     if is_multiline then
         -- Convert to single line
-        -- vim.notify("Converting to single line", vim.log.levels.TRACE)
+        util.trace('Converting to single line')
         new_lines[1] = ''
         if not vim.startswith(words[1], enclosing_brackets[1]) then
             new_lines[1] = enclosing_brackets[1]
@@ -300,7 +308,7 @@ function M.convert_between_single_and_multiline()
         new_lines[1] = new_lines[1] .. enclosing_brackets[2]
     else
         -- Convert to multiline
-        -- vim.notify("Converting to multiline", vim.log.levels.TRACE)
+        util.trace('Converting to multiline')
         local indent = util.blankspace_indent(start_row_expr + 1)
         local indent_params = indent .. util.blankspace_indent()
 

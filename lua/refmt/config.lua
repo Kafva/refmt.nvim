@@ -11,6 +11,8 @@ ExprType = {
 M.default_opts = {
     -- Enable default keybindings?
     default_bindings = true,
+    -- Enable trace logging?
+    trace = false,
     -- Filetypes to insert trailing commas for when expanding expressions
     -- onto multiple lines
     trailing_comma_filetypes = {
@@ -104,7 +106,6 @@ function M.setup(user_opts)
 
         vim.keymap.set("n", "tc", require('refmt').convert_comment_slash_to_asterisk,
                        {desc = "Convert '// ... ' comments into '/** ... */'"})
-
     end
     -- stylua: ignore end
 end
