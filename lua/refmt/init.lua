@@ -6,9 +6,12 @@ function M.convert_between_command_and_exec_array()
     -- Only parse the current line
     local line = vim.api.nvim_get_current_line()
 
-    -- Convert into a command if the line contains '[' or '{'
-    local start_index, _, _ = line:find('[%[%{]')
-    if start_index ~= nil then
+    -- Convert into a bash command string if the line contains
+    -- an opening bracket, closing bracket and one or more commas
+    local found_open, _, _ = line:find('[%[%{]')
+    local found_close, _, _ = line:find('[%]%}]')
+    local found_comma, _, _ = line:find(',')
+    if found_open ~= nil and found_close ~= nil and found_comma ~= nil then
         require('refmt.convert_array').convert_to_bash_command()
     else
         require('refmt.convert_array').convert_to_exec_array()

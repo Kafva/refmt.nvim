@@ -10,8 +10,7 @@ function M.convert_to_exec_array()
     local parser = vim.treesitter.get_string_parser(line, 'bash', nil)
     local tree = parser:parse({ 0, 1 })[1]
     -- The root node is a "program", we want to pass the first "command"
-    ---@diagnostic disable-next-line: missing-parameter
-    local node = tree:root():child()
+    local node = tree:root():child(0)
 
     if node == nil then
         vim.notify('No node under cursor')
@@ -50,9 +49,17 @@ function M.convert_to_bash_command()
         return
     end
 
-    -- Remove everything before/after the array markers in the first line
+    -- Remove everything before the first array marker and everything after the
+    -- final array marker in the first line
     local start_index, _, _ = line:find('[%[%{]')
-    local end_index, _, _ = line:find('[%]%}]')
+    local end_index
+    for i = #line, 0, -1 do
+        end_index, _, _ = line:find('[%]%}]', i)
+        if end_index then
+            break
+        end
+    end
+
     line = line:sub(start_index + 1, end_index - 1)
 
     local words = vim.split(line, ',')

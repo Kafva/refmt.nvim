@@ -25,6 +25,19 @@ table.insert(M.testcases, {
 })
 
 table.insert(M.testcases, {
+    desc = 'Convert between bash command with {} and exec(...) array in a shell script',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/exec_array_brackets_input.sh',
+            'tests/files/exec_array_brackets_output.sh',
+            { 1, 0 },
+            { 1, 0 },
+            require('refmt').convert_between_command_and_exec_array
+        )
+    end,
+})
+
+table.insert(M.testcases, {
     desc = 'Convert between bash commands and exec(...) arrays in a python script',
     fn = function()
         fixture.open('tests/files/exec_array_input.py')
