@@ -37,6 +37,10 @@ function M.convert_between_single_and_multiline_parameter_lists()
     end
 end
 
+function M.convert_between_single_and_multiline_deref()
+    require('refmt.convert_field_multiline_deref').convert_between_single_and_multiline_deref()
+end
+
 function M.convert_comment_slash_to_asterisk()
     require('refmt.convert_comment').convert_comment_slash_to_asterisk()
 end
