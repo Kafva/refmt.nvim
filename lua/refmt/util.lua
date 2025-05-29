@@ -30,11 +30,12 @@ function M.get_array_brackets()
     end
 end
 
+-- Finds the first parent of the given type.
 ---@param node_types string[]
 ---@param root_node? TSNode
 ---@return TSNode?
 function M.find_parent(node_types, root_node)
-    local node, parent
+    local node
     if root_node ~= nil then
         node = root_node
     else
@@ -43,15 +44,42 @@ function M.find_parent(node_types, root_node)
             return nil
         end
     end
-    parent = node
 
-    while not vim.tbl_contains(node_types, parent:type()) do
-        parent = parent:parent()
-        if parent == nil then
+    while not vim.tbl_contains(node_types, node:type()) do
+        node = node:parent()
+        if node == nil then
             return nil
         end
     end
-    return parent
+    return node
+end
+
+-- Finds the final parent of the given type.
+---@param node_types string[]
+---@param root_node? TSNode
+---@return TSNode?
+function M.find_parent_final(node_types, root_node)
+    local node
+    if root_node ~= nil then
+        node = root_node
+    else
+        node = vim.treesitter.get_node()
+        if node == nil then
+            return nil
+        end
+    end
+
+    local final_parent = node
+    while node do
+        node = node:parent()
+        if node == nil then
+            break
+        end
+        if vim.tbl_contains(node_types, node:type()) then
+            final_parent = node
+        end
+    end
+    return final_parent
 end
 
 -- Return the values of all direct child nodes of `node` and the rows

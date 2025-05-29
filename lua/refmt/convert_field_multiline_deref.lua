@@ -1,14 +1,19 @@
 local M = {}
 
+local config = require('refmt.config')
 local util = require('refmt.util')
-
-local dots = {}
 
 -- Languages that need a '\' at EOL for dereferencing on multiple lines
 local escaped_languages = { 'python' }
-local arglist_node_types = { 'argument_list', 'arguments' }
 
-local function walk(node, level)
+---@param node TSNode
+---@param level number
+---@param dots number[]
+---@return number[]
+local function walk(node, level, dots)
+    local args_node_types = config.deref_node_types[DerefType.ARGS][vim.o.ft]
+        or config.deref_node_types[DerefType.ARGS]['default']
+
     for child in node:iter_children() do
         local _, start_col, _, _, end_col, _ = child:range(true)
         util.trace(
@@ -25,22 +30,27 @@ local function walk(node, level)
             table.insert(dots, #dots + 1, end_col)
         end
 
-        if not vim.tbl_contains(arglist_node_types, child:type()) then
-            walk(child, level + 1)
+        if not vim.tbl_contains(args_node_types, child:type()) then
+            dots = walk(child, level + 1, dots)
         end
     end
+
+    return dots
 end
 
 function M.convert_between_single_and_multiline_deref()
     local lnum = vim.fn.line('.')
     local indent = util.blankspace_indent(lnum)
     local single_indent = util.blankspace_indent()
-    local parent
-    parent = util.find_parent({ 'expression_statement' })
+    local stmt_node_types = config.deref_node_types[DerefType.STMT][vim.o.ft]
+        or config.deref_node_types[DerefType.STMT]['default']
+
+    local parent = util.find_parent_final(stmt_node_types)
     if parent == nil then
         vim.notify('No valid match under cursor')
         return
     end
+    util.trace('Parent node: ' .. parent:type())
 
     local start_row, start_col, _, end_row, end_col, _ = parent:range(true)
 
@@ -48,8 +58,13 @@ function M.convert_between_single_and_multiline_deref()
     local lines =
         vim.api.nvim_buf_get_text(0, start_row, start_col, end_row, end_col, {})
 
-    dots = {}
-    walk(parent, 1)
+    local dots = walk(parent, 1, {})
+    util.trace('Dot indices: ' .. vim.inspect(dots))
+
+    if #dots == 0 then
+        vim.notify('No dereferencing found under cursor', vim.log.levels.WARN)
+        return
+    end
 
     if #lines == 1 then
         -- Expand to multiline
@@ -64,10 +79,19 @@ function M.convert_between_single_and_multiline_deref()
             -- ~~~~~~~~~~~~~~~~~~>
             --                    ~~~~~~~~~~>
             --                               ~~~~~~~~~~~~~~~~~>
-            local start_index = dots[i]
-            local end_index = i < #dots and dots[i + 1] - 1 or #lines[1]
-            local attr = lines[1]:sub(start_index, end_index)
-            local new_line = indent .. single_indent .. attr
+            -- The `lines[1]` does not include indentation but the indices
+            -- inside `dots` do.
+            local start_index = dots[i] - #indent
+
+            local end_index
+            if i < #dots then
+                end_index = dots[i + 1] - 1 - #indent
+            else
+                end_index = #lines[1]
+            end
+
+            local item = lines[1]:sub(start_index, end_index)
+            local new_line = indent .. single_indent .. item
             if vim.tbl_contains(escaped_languages, vim.o.ft) and i < #dots then
                 new_line = new_line .. ' \\'
             end

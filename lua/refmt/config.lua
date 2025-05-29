@@ -7,6 +7,12 @@ ExprType = {
     LIST = 'list',
 }
 
+---@enum DerefType
+DerefType = {
+    STMT = 'stmt',
+    ARGS = 'args',
+}
+
 ---@type RefmtOptions
 M.default_opts = {
     -- Enable default keybindings?
@@ -83,6 +89,16 @@ M.default_opts = {
             cpp = { 'initializer_list' },
             zig = { 'initializer_list' },
             go = { 'literal_value' },
+        },
+    },
+    deref_node_types = {
+        [DerefType.STMT] = {
+            default = { 'expression_statement' },
+            lua = { 'function_call' },
+        },
+        [DerefType.ARGS] = {
+            default = { 'arguments' },
+            python = { 'argument_list' },
         },
     },
 }
