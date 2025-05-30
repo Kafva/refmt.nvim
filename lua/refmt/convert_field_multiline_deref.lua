@@ -11,8 +11,7 @@ local escaped_languages = { 'python' }
 ---@param dots number[]
 ---@return number[]
 local function walk(node, level, dots)
-    local args_node_types = config.deref_node_types[DerefType.ARGS][vim.o.ft]
-        or config.deref_node_types[DerefType.ARGS]['default']
+    local args_node_types = config.get_deref_node_types(DerefType.ARGS)
 
     for child in node:iter_children() do
         local _, start_col, _, _, end_col, _ = child:range(true)
@@ -39,13 +38,16 @@ local function walk(node, level, dots)
 end
 
 function M.convert_between_single_and_multiline_deref()
-    local lnum = vim.fn.line('.')
-    local indent = util.blankspace_indent(lnum)
+    local cur = vim.api.nvim_win_get_cursor(0)
+    local indent = util.blankspace_indent(cur[1])
     local single_indent = util.blankspace_indent()
-    local stmt_node_types = config.deref_node_types[DerefType.STMT][vim.o.ft]
-        or config.deref_node_types[DerefType.STMT]['default']
+    local call_node_types = config.get_deref_node_types(DerefType.CALL)
+    local args_node_types = config.get_deref_node_types(DerefType.ARGS)
 
-    local parent = util.find_parent_final(stmt_node_types)
+    -- Find the final call node type going upwards, if we encounter an
+    -- 'arguments' node, break, we have the outer most call we are looking for
+    -- already.
+    local parent = util.find_parent_final(call_node_types, nil, args_node_types)
     if parent == nil then
         vim.notify('No valid match under cursor')
         return
@@ -74,23 +76,32 @@ function M.convert_between_single_and_multiline_deref()
         else
             new_lines = { '' }
         end
+
+        -- The `lines[1]` only includes the actual call, we may have more
+        -- leading text, the index in `dots` is based on the full line!
+        local full_line =
+            vim.api.nvim_buf_get_lines(0, start_row, start_row + 1, false)[1]
+
         for i, _ in ipairs(dots) do
             -- .update(**********).update2().update3(foo.bar())
             -- ~~~~~~~~~~~~~~~~~~>
             --                    ~~~~~~~~~~>
             --                               ~~~~~~~~~~~~~~~~~>
-            -- The `lines[1]` does not include indentation but the indices
-            -- inside `dots` do.
-            local start_index = dots[i] - #indent
+            local start_index = dots[i]
 
             local end_index
             if i < #dots then
-                end_index = dots[i + 1] - 1 - #indent
+                end_index = dots[i + 1] - 1
             else
-                end_index = #lines[1]
+                -- The end_index needs to take leading text into account
+                local shared_prefix_start, _ = full_line:find(lines[1], 0, true)
+                if shared_prefix_start == nil then
+                    error('Could not find call text in complete line')
+                end
+                end_index = #lines[1] + shared_prefix_start - 1
             end
 
-            local item = lines[1]:sub(start_index, end_index)
+            local item = full_line:sub(start_index, end_index)
             local new_line = indent .. single_indent .. item
             if vim.tbl_contains(escaped_languages, vim.o.ft) and i < #dots then
                 new_line = new_line .. ' \\'

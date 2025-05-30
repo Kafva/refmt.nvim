@@ -9,7 +9,7 @@ ExprType = {
 
 ---@enum DerefType
 DerefType = {
-    STMT = 'stmt',
+    CALL = 'call',
     ARGS = 'args',
 }
 
@@ -92,8 +92,9 @@ M.default_opts = {
         },
     },
     deref_node_types = {
-        [DerefType.STMT] = {
-            default = { 'expression_statement' },
+        [DerefType.CALL] = {
+            default = { 'call_expression' },
+            python = { 'call' },
             lua = { 'function_call' },
         },
         [DerefType.ARGS] = {
@@ -127,6 +128,12 @@ function M.setup(user_opts)
                        {desc = "Convert '// ... ' comments into '/** ... */'"})
     end
     -- stylua: ignore end
+end
+
+---@param dereftype DerefType
+function M.get_deref_node_types(dereftype)
+    return M.deref_node_types[dereftype][vim.o.ft]
+        or M.deref_node_types[dereftype]['default']
 end
 
 return M

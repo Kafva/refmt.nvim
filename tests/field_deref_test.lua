@@ -50,6 +50,19 @@ table.insert(M.testcases, {
 })
 
 table.insert(M.testcases, {
+    desc = 'Unfold and refold embedded field dereferencing in tsx',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/field_multiline_deref_input.tsx',
+            'tests/files/field_multiline_deref_output.tsx',
+            { 2, 23 },
+            { 2, 23 },
+            require('refmt').convert_between_single_and_multiline_deref
+        )
+    end,
+})
+
+table.insert(M.testcases, {
     desc = 'Unfold and refold field dereferencing in lua',
     fn = function()
         fixture.check_apply_and_revert(

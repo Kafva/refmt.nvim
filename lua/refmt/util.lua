@@ -54,11 +54,12 @@ function M.find_parent(node_types, root_node)
     return node
 end
 
--- Finds the final parent of the given type.
+-- Finds the final parent of the given type under the cursor.
 ---@param node_types string[]
 ---@param root_node? TSNode
+---@param break_node_types string[]
 ---@return TSNode?
-function M.find_parent_final(node_types, root_node)
+function M.find_parent_final(node_types, root_node, break_node_types)
     local node
     if root_node ~= nil then
         node = root_node
@@ -75,6 +76,11 @@ function M.find_parent_final(node_types, root_node)
         if node == nil then
             break
         end
+
+        if vim.tbl_contains(break_node_types, node:type()) then
+            break
+        end
+
         if vim.tbl_contains(node_types, node:type()) then
             final_parent = node
         end

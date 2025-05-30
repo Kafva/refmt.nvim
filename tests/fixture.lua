@@ -13,11 +13,13 @@ function M.load_parsers()
     vim.treesitter.language.add('python', { path = './tests/parser/python.so' })
     vim.treesitter.language.add('javascript', { path = './tests/parser/javascript.so' })
     vim.treesitter.language.add('typescript', { path = './tests/parser/typescript.so' })
+    vim.treesitter.language.add('tsx', { path = './tests/parser/tsx.so' })
     vim.treesitter.language.add('kotlin', { path = './tests/parser/kotlin.so' })
     vim.treesitter.language.add('java', { path = './tests/parser/java.so' })
     vim.treesitter.language.add('bash', { path = './tests/parser/bash.so' })
 
     vim.treesitter.language.register('bash', 'sh')
+    vim.treesitter.language.register('tsx', 'typescriptreact')
 
     -- Disable autoformat on save for zig, this can make the tests hang
     vim.g.zig_fmt_autosave = 0
