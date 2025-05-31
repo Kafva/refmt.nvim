@@ -153,4 +153,16 @@ table.insert(M.testcases, {
     end,
 })
 
+table.insert(M.testcases, {
+    desc = 'Fold field dereferencing over multiple lines in rust',
+    fn = function()
+        fixture.check_apply(
+            'tests/files/field_multiline_deref_input_1.rs',
+            'tests/files/field_multiline_deref_output_1.rs',
+            { 1, 1 },
+            require('refmt').convert_between_single_and_multiline_deref
+        )
+    end,
+})
+
 return M

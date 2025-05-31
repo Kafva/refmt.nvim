@@ -160,13 +160,12 @@ table.insert(M.testcases, {
 table.insert(M.testcases, {
     desc = 'Unfold function parameters with spacing in python',
     fn = function()
-        fixture.open('tests/files/arglists_spaced_input.py')
-
-        vim.api.nvim_win_set_cursor(0, { 1, 43 })
-        require('refmt').convert_between_single_and_multiline_parameter_lists()
-
-        local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        tsst.assert_eql_file('tests/files/arglists_output.py', lines)
+        fixture.check_apply(
+            'tests/files/arglists_spaced_input.py',
+            'tests/files/arglists_output.py',
+            { 1, 43 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
     end,
 })
 

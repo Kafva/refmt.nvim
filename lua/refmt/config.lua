@@ -108,6 +108,7 @@ M.default_opts = {
         },
         [ExprType.DEREF_OPERATOR] = {
             default = { '.' },
+            rust = { '.', '::' },
             c = { '.', '->' },
             cpp = { '.', '->', '::' },
         },

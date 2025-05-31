@@ -7,14 +7,15 @@ local util = require('refmt.util')
 -- ('.') beneath the current node.
 ---@param node TSNode
 ---@param level number
+---@param prev_row number|nil
 ---@param dots table<number[]>
 ---@return table<number[]>
-local function walk(node, level, dots)
+local function walk(node, level, prev_row, dots)
     local args_node_types = config.get_node_types(ExprType.DEREF_CALL_ARGS)
     local dot_node_types = config.get_node_types(ExprType.DEREF_OPERATOR)
 
     for child in node:iter_children() do
-        local _, start_col, _, _, end_col, _ = child:range(true)
+        local start_row, start_col, _, _, end_col, _ = child:range(true)
         util.trace(
             string.format(
                 "Child@%d: '%s' [%d, %d]",
@@ -25,12 +26,20 @@ local function walk(node, level, dots)
             )
         )
 
+        -- Only insert new dot entries if they are on a new line from the
+        -- dot that was last inserted (when walking over an expression that
+        -- spans more than one line).
         if vim.tbl_contains(dot_node_types, child:type()) then
-            table.insert(dots, #dots + 1, { end_col, #child:type() })
+            if prev_row == nil then
+                table.insert(dots, #dots + 1, { end_col, #child:type() })
+            elseif prev_row ~= start_row then
+                table.insert(dots, #dots + 1, { end_col, #child:type() })
+                prev_row = start_row
+            end
         end
 
         if not vim.tbl_contains(args_node_types, child:type()) then
-            dots = walk(child, level + 1, dots)
+            dots = walk(child, level + 1, prev_row, dots)
         end
 
         -- Some filetypes like zig do not have an 'arguments' node like other
@@ -74,7 +83,8 @@ function M.convert_between_single_and_multiline()
     local lines =
         vim.api.nvim_buf_get_text(0, start_row, start_col, end_row, end_col, {})
 
-    local dots = walk(parent, 1, {})
+    local prev_row = #lines > 1 and start_row or nil
+    local dots = walk(parent, 1, prev_row, {})
     util.trace('Dot indices: ' .. vim.inspect(dots))
 
     if #dots == 0 then
@@ -101,17 +111,17 @@ function M.convert_between_single_and_multiline()
             -- ~~~~~~~~~~~~~~~~~~>
             --                    ~~~~~~~~~~>
             --                               ~~~~~~~~~~~~~~~~~>
-            local start_index = dots[i][1] - (dots[i][2] - 1)
+            local shared_prefix_start, _ = full_line:find(lines[1], 0, true)
+            if shared_prefix_start == nil then
+                error('Could not find call text in complete line')
+            end
 
+            local start_index = dots[i][1] - (dots[i][2] - 1)
             local end_index
             if i < #dots then
                 end_index = dots[i + 1][1] - dots[i + 1][2]
             else
                 -- The end_index needs to take leading text into account
-                local shared_prefix_start, _ = full_line:find(lines[1], 0, true)
-                if shared_prefix_start == nil then
-                    error('Could not find call text in complete line')
-                end
                 end_index = #lines[1] + shared_prefix_start - 1
             end
 

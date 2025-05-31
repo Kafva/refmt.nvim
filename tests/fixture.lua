@@ -83,17 +83,9 @@ end
 ---@param inputfile string
 ---@param outputfile string
 ---@param before_pos integer[]
----@param after_pos integer[]
 ---@param fn function
----@param revert_fn? function
-function M.check_apply_and_revert(
-    inputfile,
-    outputfile,
-    before_pos,
-    after_pos,
-    fn,
-    revert_fn
-)
+---@return string[]
+function M.check_apply(inputfile, outputfile, before_pos, fn)
     require('tests.fixture').open(inputfile)
     local initial_lines =
         vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
@@ -105,6 +97,25 @@ function M.check_apply_and_revert(
     -- XXX: `nvim_buf_get_lines()` truncates long lines...
     local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
     tsst.assert_eql_file(outputfile, lines)
+
+    return initial_lines
+end
+
+---@param inputfile string
+---@param outputfile string
+---@param before_pos integer[]
+---@param after_pos integer[]
+---@param fn function
+---@param revert_fn? function
+function M.check_apply_and_revert(
+    inputfile,
+    outputfile,
+    before_pos,
+    after_pos,
+    fn,
+    revert_fn
+)
+    local initial_lines = M.check_apply(inputfile, outputfile, before_pos, fn)
 
     -- Revert and check against original content
     M.check_reverted(inputfile, initial_lines, after_pos, revert_fn or fn)

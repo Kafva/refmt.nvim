@@ -160,54 +160,50 @@ table.insert(M.testcases, {
 table.insert(M.testcases, {
     desc = 'Fold function with first argument on same line in typescript',
     fn = function()
-        fixture.open('tests/files/func_call_input_1.ts')
-
-        vim.api.nvim_win_set_cursor(0, { 1, 19 })
-        require('refmt').convert_between_single_and_multiline_parameter_lists()
-
-        local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        tsst.assert_eql_file('tests/files/func_call_output_1.ts', lines)
+        fixture.check_apply(
+            'tests/files/func_call_input_1.ts',
+            'tests/files/func_call_output_1.ts',
+            { 1, 19 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
     end,
 })
 
 table.insert(M.testcases, {
     desc = 'Fold function call in typescript with multiline object',
     fn = function()
-        fixture.open('tests/files/func_call_input_bad_line_break.ts')
-
-        vim.api.nvim_win_set_cursor(0, { 1, 29 })
-        require('refmt').convert_between_single_and_multiline_parameter_lists()
-
-        local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        -- XXX: 'input' version is on one-line
-        tsst.assert_eql_file('tests/files/func_call_input_2.ts', lines)
+        fixture.check_apply(
+            'tests/files/func_call_input_bad_line_break.ts',
+            -- XXX: 'input' version is on one-line
+            'tests/files/func_call_input_2.ts',
+            { 1, 29 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
     end,
 })
 
 table.insert(M.testcases, {
     desc = 'Fold function call in typescript with multiline object and curly bracket on newline',
     fn = function()
-        fixture.open('tests/files/func_call_input_bad_line_break_2.ts')
-
-        vim.api.nvim_win_set_cursor(0, { 1, 29 })
-        require('refmt').convert_between_single_and_multiline_parameter_lists()
-
-        local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        -- XXX: 'input' version is on one-line
-        tsst.assert_eql_file('tests/files/func_call_input_2.ts', lines)
+        fixture.check_apply(
+            'tests/files/func_call_input_bad_line_break_2.ts',
+            -- XXX: 'input' version is on one-line
+            'tests/files/func_call_input_2.ts',
+            { 1, 29 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
     end,
 })
 
 table.insert(M.testcases, {
     desc = 'Unfold function call with bad spacing in c',
     fn = function()
-        fixture.open('tests/files/func_call_spaced_input.c')
-
-        vim.api.nvim_win_set_cursor(0, { 4, 23 })
-        require('refmt').convert_between_single_and_multiline_parameter_lists()
-
-        local lines = vim.api.nvim_buf_get_lines(0, 0, vim.fn.line('$'), true)
-        tsst.assert_eql_file('tests/files/func_call_output.c', lines)
+        fixture.check_apply(
+            'tests/files/func_call_spaced_input.c',
+            'tests/files/func_call_output.c',
+            { 4, 23 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
     end,
 })
 
