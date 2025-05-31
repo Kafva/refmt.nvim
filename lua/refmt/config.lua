@@ -5,12 +5,9 @@ ExprType = {
     FUNC_DEF = 'func_def',
     FUNC_CALL = 'func_call',
     LIST = 'list',
-}
-
----@enum DerefType
-DerefType = {
-    CALL = 'call',
-    ARGS = 'args',
+    DEREF_CALL = 'deref_call',
+    DEREF_CALL_ARGS = 'deref_call_args',
+    DEREF_OPERATOR = 'deref_operator',
 }
 
 ---@type RefmtOptions
@@ -48,6 +45,13 @@ M.default_opts = {
         'sh',
         'bash',
         'zsh',
+    },
+    -- Filetypes that need a '\' at EOL for dereferencing on multiple lines
+    multiline_escaped_filetypes = {
+        'python',
+    },
+    multiline_deref_unsupported_filetypes = {
+        'go',
     },
     -- Recognized `TSNode` parent types when converting between single and
     -- multiline expressions per expression type and language (excluding shell).
@@ -90,16 +94,22 @@ M.default_opts = {
             zig = { 'initializer_list' },
             go = { 'literal_value' },
         },
-    },
-    deref_node_types = {
-        [DerefType.CALL] = {
+        [ExprType.DEREF_CALL] = {
             default = { 'call_expression' },
             python = { 'call' },
             lua = { 'function_call' },
         },
-        [DerefType.ARGS] = {
+        [ExprType.DEREF_CALL_ARGS] = {
             default = { 'arguments' },
             python = { 'argument_list' },
+            swift = { 'value_arguments', 'lambda_literal' },
+            kotlin = { 'value_arguments', 'annotated_lambda' },
+            zig = {},
+        },
+        [ExprType.DEREF_OPERATOR] = {
+            default = { '.' },
+            c = { '.', '->' },
+            cpp = { '.', '->', '::' },
         },
     },
 }
@@ -130,10 +140,10 @@ function M.setup(user_opts)
     -- stylua: ignore end
 end
 
----@param dereftype DerefType
-function M.get_deref_node_types(dereftype)
-    return M.deref_node_types[dereftype][vim.o.ft]
-        or M.deref_node_types[dereftype]['default']
+---@param exprtype ExprType
+---@return string[]
+function M.get_node_types(exprtype)
+    return M.node_types[exprtype][vim.o.ft] or M.node_types[exprtype]['default']
 end
 
 return M

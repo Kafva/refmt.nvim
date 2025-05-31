@@ -3,15 +3,15 @@ local M = {}
 local config = require('refmt.config')
 local util = require('refmt.util')
 
--- Languages that need a '\' at EOL for dereferencing on multiple lines
-local escaped_languages = { 'python' }
-
+-- Returns a table of (index, length) tuples for every dereferencing opertator
+-- ('.') beneath the current node.
 ---@param node TSNode
 ---@param level number
----@param dots number[]
----@return number[]
+---@param dots table<number[]>
+---@return table<number[]>
 local function walk(node, level, dots)
-    local args_node_types = config.get_deref_node_types(DerefType.ARGS)
+    local args_node_types = config.get_node_types(ExprType.DEREF_CALL_ARGS)
+    local dot_node_types = config.get_node_types(ExprType.DEREF_OPERATOR)
 
     for child in node:iter_children() do
         local _, start_col, _, _, end_col, _ = child:range(true)
@@ -25,24 +25,38 @@ local function walk(node, level, dots)
             )
         )
 
-        if child:type() == '.' then
-            table.insert(dots, #dots + 1, end_col)
+        if vim.tbl_contains(dot_node_types, child:type()) then
+            table.insert(dots, #dots + 1, { end_col, #child:type() })
         end
 
         if not vim.tbl_contains(args_node_types, child:type()) then
             dots = walk(child, level + 1, dots)
+        end
+
+        -- Some filetypes like zig do not have an 'arguments' node like other
+        -- filetypes, to avoid parsing the arguments to a function, stop after
+        -- the first child on call expressions for these cases.
+        if #args_node_types == 0 and node:type() == 'call_expression' then
+            break
         end
     end
 
     return dots
 end
 
-function M.convert_between_single_and_multiline_deref()
+function M.convert_between_single_and_multiline()
     local cur = vim.api.nvim_win_get_cursor(0)
     local indent = util.blankspace_indent(cur[1])
     local single_indent = util.blankspace_indent()
-    local call_node_types = config.get_deref_node_types(DerefType.CALL)
-    local args_node_types = config.get_deref_node_types(DerefType.ARGS)
+    local call_node_types = config.get_node_types(ExprType.DEREF_CALL)
+    local args_node_types = config.get_node_types(ExprType.DEREF_CALL_ARGS)
+
+    if
+        vim.tbl_contains(config.multiline_deref_unsupported_filetypes, vim.o.ft)
+    then
+        vim.notify('Unsupported filetype')
+        return
+    end
 
     -- Find the final call node type going upwards, if we encounter an
     -- 'arguments' node, break, we have the outer most call we are looking for
@@ -71,7 +85,7 @@ function M.convert_between_single_and_multiline_deref()
     if #lines == 1 then
         -- Expand to multiline
         -- First dereference should be on a new line
-        if vim.tbl_contains(escaped_languages, vim.o.ft) then
+        if vim.tbl_contains(config.multiline_escaped_filetypes, vim.o.ft) then
             new_lines = { ' \\' }
         else
             new_lines = { '' }
@@ -87,11 +101,11 @@ function M.convert_between_single_and_multiline_deref()
             -- ~~~~~~~~~~~~~~~~~~>
             --                    ~~~~~~~~~~>
             --                               ~~~~~~~~~~~~~~~~~>
-            local start_index = dots[i]
+            local start_index = dots[i][1] - (dots[i][2] - 1)
 
             local end_index
             if i < #dots then
-                end_index = dots[i + 1] - 1
+                end_index = dots[i + 1][1] - dots[i + 1][2]
             else
                 -- The end_index needs to take leading text into account
                 local shared_prefix_start, _ = full_line:find(lines[1], 0, true)
@@ -103,20 +117,24 @@ function M.convert_between_single_and_multiline_deref()
 
             local item = full_line:sub(start_index, end_index)
             local new_line = indent .. single_indent .. item
-            if vim.tbl_contains(escaped_languages, vim.o.ft) and i < #dots then
+            if
+                vim.tbl_contains(config.multiline_escaped_filetypes, vim.o.ft)
+                and i < #dots
+            then
                 new_line = new_line .. ' \\'
             end
             table.insert(new_lines, #new_lines + 1, new_line)
         end
-        -- Skip over the trailing dot on the first line
-        start_col = dots[1] - 1
+        -- Skip over the trailing dot-operator on the first line
+        start_col = dots[1][1] - dots[1][2]
     else
         -- Convert to single line, strip trailing '\' if present
         for i, line in ipairs(lines) do
             if i == 1 then
                 new_lines[1] = line:gsub(' \\$', '')
             else
-                local item = line:sub(dots[i - 1]):gsub(' \\$', '')
+                local start_index = dots[i - 1][1] - (dots[i - 1][2] - 1)
+                local item = line:sub(start_index):gsub(' \\$', '')
                 new_lines[1] = new_lines[1] .. item
             end
         end

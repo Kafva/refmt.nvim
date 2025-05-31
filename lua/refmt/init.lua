@@ -31,14 +31,14 @@ function M.convert_between_single_and_multiline_parameter_lists()
     end
 
     if vim.tbl_contains(config.shell_filetypes, vim.o.ft) then
-        require('refmt.convert_single_multiline').convert_between_single_and_multiline_bash()
+        require('refmt.convert_multiline_param_lists').convert_between_single_and_multiline_bash()
     else
-        require('refmt.convert_single_multiline').convert_between_single_and_multiline()
+        require('refmt.convert_multiline_param_lists').convert_between_single_and_multiline()
     end
 end
 
 function M.convert_between_single_and_multiline_deref()
-    require('refmt.convert_field_multiline_deref').convert_between_single_and_multiline_deref()
+    require('refmt.convert_multiline_field_deref').convert_between_single_and_multiline()
 end
 
 function M.convert_comment_slash_to_asterisk()

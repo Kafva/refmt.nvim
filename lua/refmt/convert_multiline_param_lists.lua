@@ -157,8 +157,7 @@ function M.convert_between_single_and_multiline()
     -- if there is a list inside of a function call, match the list,
     -- if there is a function call inside of a list, metch the function call.
     for _, t in ipairs({ ExprType.LIST, ExprType.FUNC_CALL, ExprType.FUNC_DEF }) do
-        local parent_list_types = config.node_types[t][vim.o.ft]
-            or config.node_types[t]['default']
+        local parent_list_types = config.get_node_types(t)
 
         util.trace(
             string.format(
