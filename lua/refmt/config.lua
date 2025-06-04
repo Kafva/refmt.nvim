@@ -74,13 +74,13 @@ M.default_opts = {
         },
         [ExprType.FUNC_CALL] = {
             default = { 'arguments' },
+            zig = { 'call_expression' },
+            rust = { 'arguments' },
             c = { 'argument_list' },
             cpp = { 'argument_list' },
             go = { 'argument_list' },
-            rust = { 'argument_list' },
             python = { 'argument_list' },
             swift = { 'value_arguments' },
-            zig = { 'call_expression' },
         },
         [ExprType.LIST] = {
             default = { 'array' },

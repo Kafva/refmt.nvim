@@ -145,6 +145,19 @@ table.insert(M.testcases, {
 })
 
 table.insert(M.testcases, {
+    desc = 'Unfold and refold function call in rust',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/func_call_input.rs',
+            'tests/files/func_call_output.rs',
+            { 1, 38 },
+            { 2, 5 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
+    end,
+})
+
+table.insert(M.testcases, {
     desc = 'Unfold and refold function call in go',
     fn = function()
         fixture.check_apply_and_revert(
