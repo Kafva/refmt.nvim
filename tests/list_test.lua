@@ -3,7 +3,6 @@ require('refmt').setup({})
 local M = {}
 
 local fixture = require('tests.fixture')
-local tsst = require('tsst')
 
 fixture.load_parsers()
 
@@ -84,6 +83,32 @@ table.insert(M.testcases, {
             'tests/files/list_output.go',
             { 6, 34 },
             { 9, 2 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
+    end,
+})
+
+table.insert(M.testcases, {
+    desc = 'Unfold and refold list declaration in rust',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/list_input.rs',
+            'tests/files/list_output.rs',
+            { 2, 17 },
+            { 3, 12 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
+    end,
+})
+
+table.insert(M.testcases, {
+    desc = 'Unfold and refold struct constructor in rust',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/list_input_1.rs',
+            'tests/files/list_output_1.rs',
+            { 2, 27 },
+            { 4, 13 },
             require('refmt').convert_between_single_and_multiline_parameter_lists
         )
     end,

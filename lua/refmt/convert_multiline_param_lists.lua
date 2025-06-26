@@ -170,7 +170,7 @@ function M.convert_between_single_and_multiline()
         if parent ~= nil then
             expr_type = t
             if expr_type == ExprType.LIST then
-                enclosing_brackets = util.get_array_brackets()
+                enclosing_brackets = util.get_array_brackets(parent)
             else
                 enclosing_brackets = { '(', ')' }
             end

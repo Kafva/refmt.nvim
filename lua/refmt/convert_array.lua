@@ -30,7 +30,7 @@ function M.convert_to_exec_array()
     end
 
     local indent = util.blankspace_indent(lnum)
-    local brackets = util.get_array_brackets()
+    local brackets = util.get_array_brackets(node)
     local new_line = indent
         .. brackets[1]
         .. vim.fn.join(words, ', ')

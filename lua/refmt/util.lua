@@ -21,9 +21,14 @@ function M.blankspace_indent(lnum)
     return string.rep(indent, cnt)
 end
 
+---@param node TSNode
 ---@return string[]
-function M.get_array_brackets()
-    if vim.tbl_contains(config.curly_bracket_filetypes, vim.o.ft) then
+function M.get_array_brackets(node)
+    -- Special case, rust uses `[]` for arrays but `{}` for
+    -- struct initialization
+    if vim.o.ft == 'rust' and node:type() == 'field_initializer_list' then
+        return { '{', '}' }
+    elseif vim.tbl_contains(config.curly_bracket_filetypes, vim.o.ft) then
         return { '{', '}' }
     else
         return { '[', ']' }
