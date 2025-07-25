@@ -2,6 +2,7 @@ require('refmt').setup({})
 
 local M = {}
 
+local tsst = require('tsst')
 local fixture = require('tests.fixture')
 
 fixture.load_parsers()
@@ -65,6 +66,9 @@ table.insert(M.testcases, {
 table.insert(M.testcases, {
     desc = 'Unfold and refold field dereferencing in swift',
     fn = function()
+        if vim.fn.has('mac') == 0 then
+            return tsst.skip()
+        end
         fixture.check_apply_and_revert(
             'tests/files/field_multiline_deref_input.swift',
             'tests/files/field_multiline_deref_output.swift',
