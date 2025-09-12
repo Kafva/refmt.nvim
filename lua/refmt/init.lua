@@ -37,6 +37,11 @@ function M.convert_between_single_and_multiline_parameter_lists()
     end
 end
 
+-- Toggle between a single and a multiline <element attr=1 attr=2/>
+function M.convert_between_single_and_multiline_element()
+    require('refmt.convert_multiline_element').convert_between_single_and_multiline_element()
+end
+
 function M.convert_between_single_and_multiline_deref()
     require('refmt.convert_multiline_field_deref').convert_between_single_and_multiline()
 end

@@ -5,6 +5,7 @@ ExprType = {
     FUNC_DEF = 'func_def',
     FUNC_CALL = 'func_call',
     LIST = 'list',
+    ELEMENT = 'element',
     DEREF_CALL = 'deref_call',
     DEREF_CALL_ARGS = 'deref_call_args',
     DEREF_OPERATOR = 'deref_operator',
@@ -94,6 +95,10 @@ M.default_opts = {
             zig = { 'initializer_list' },
             go = { 'literal_value' },
         },
+        [ExprType.ELEMENT] = {
+            default = { 'self_closing_tag', 'start_tag' },
+            xml = { 'EmptyElemTag', 'STag' },
+        },
         [ExprType.DEREF_CALL] = {
             default = { 'call_expression' },
             python = { 'call' },
@@ -131,6 +136,9 @@ function M.setup(user_opts)
 
         vim.keymap.set("n", "t.", require('refmt').convert_between_single_and_multiline_deref,
                        {desc = "Toggle between a single line and multiline field dereferencing"})
+
+        vim.keymap.set("n", "te", require('refmt').convert_between_single_and_multiline_element,
+                       {desc = "Toggle between a single line and multiline <element/>"})
 
         vim.keymap.set("n", "ta", require('refmt').convert_between_command_and_exec_array,
                       {desc = "Convert between a bash command and an exec(...) array"})
