@@ -25,7 +25,9 @@ M.default_opts = {
             'rust',
             'go',
         },
-        [ExprType.FUNC_CALL] = {},
+        [ExprType.FUNC_CALL] = {
+            'kotlin',
+        },
         [ExprType.LIST] = {
             'zig',
             'lua',
@@ -82,6 +84,7 @@ M.default_opts = {
             go = { 'argument_list' },
             python = { 'argument_list' },
             swift = { 'value_arguments' },
+            kotlin = { 'value_arguments' },
         },
         [ExprType.LIST] = {
             default = { 'array' },

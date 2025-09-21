@@ -171,6 +171,19 @@ table.insert(M.testcases, {
 })
 
 table.insert(M.testcases, {
+    desc = 'Unfold and refold function call in kotlin',
+    fn = function()
+        fixture.check_apply_and_revert(
+            'tests/files/func_call_input.kt',
+            'tests/files/func_call_output.kt',
+            { 3, 11 },
+            { 3, 11 },
+            require('refmt').convert_between_single_and_multiline_parameter_lists
+        )
+    end,
+})
+
+table.insert(M.testcases, {
     desc = 'Fold function with first argument on same line in typescript',
     fn = function()
         fixture.check_apply(
